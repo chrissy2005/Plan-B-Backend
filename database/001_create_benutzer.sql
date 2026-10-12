@@ -1,0 +1,7 @@
+CREATE TABLE benutzer (
+    benutzer_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vorname VARCHAR(100) NOT NULL,
+    nachname VARCHAR(100) NOT NULL,
+    email VARCHAR(254) NOT NULL UNIQUE,
+    passwort_hash TEXT NOT NULL
+);
