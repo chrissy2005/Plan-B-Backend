@@ -2,22 +2,22 @@ package org.planb.model;
 
 public class User {
 
-    private long id;
+    private Long id;
     private String firstname;
     private String lastname;
     private String email;
-    private String password;
+    private String passwordHash;
 
-public User(Long id, String firstname, String lastname, String email, String password) {
+public User(Long id, String firstname, String lastname, String email, String passwordHash) {
 
     this.id = id;
     this.firstname = firstname;
     this.lastname = lastname;
     this.email = email;
-    this.password = password;
+    this.passwordHash = passwordHash;
 
     }
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
@@ -33,8 +33,8 @@ public User(Long id, String firstname, String lastname, String email, String pas
         return email;
     }
 
-    public String getPassword() {
-        return password;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
 }
