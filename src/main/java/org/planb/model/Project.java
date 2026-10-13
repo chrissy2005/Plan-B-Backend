@@ -1,9 +1,9 @@
 package org.planb.model;
 
 public class Project {
-    private Long projectId;
-    private String projectName;
-    private String projectDescription;
+    private Long id;
+    private String name;
+    private String description;
     private Long createdByUserId;
     
     public Project(){
@@ -11,34 +11,34 @@ public class Project {
     }
 
     public Project(Long projectId, String projectName, String projectDescription, Long createdByUserId){
-        this.projectId = projectId;
-        this.projectName = projectName;
-        this.projectDescription = projectDescription;
+        this.id = projectId;
+        this.name = projectName;
+        this.description = projectDescription;
         this.createdByUserId = createdByUserId;
     }
 
-    public Long getProjectId() {
-        return projectId;
+    public Long getId() {
+        return id;
     }
 
-    public void setProjectId(Long projectId) {
-        this.projectId = projectId;
+    public void setId(Long projectId) {
+        this.id = projectId;
     }
 
-    public String getProjectName() {
-        return projectName;
+    public String getName() {
+        return name;
     }
 
-    public void setProjectName(String projectName) {
-        this.projectName = projectName;
+    public void setName(String projectName) {
+        this.name = projectName;
     }
 
-    public String getProjectDescription() {
-        return projectDescription;
+    public String getDescription() {
+        return description;
     }
 
-    public void setProjectDescription(String projectDescription) {
-        this.projectDescription = projectDescription;
+    public void setDescription(String projectDescription) {
+        this.description = projectDescription;
     }
 
     public Long getCreatedByUserId() {
