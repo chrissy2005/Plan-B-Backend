@@ -61,32 +61,28 @@ public class FileUserRepository implements UserRepository {
         }
         
     }
+
     @Override
     public synchronized Optional<User> findByEmail(String email) {
 
         String normalizedEmail = normalizeEmail(email);
         Properties properties =  loadProperties();
         
-        for (long i = 1; ; i++) {
-
-            String prefix = "user." + i + ".";
-            String storedEmail = properties.getProperty(prefix + "email");
-            if (storedEmail == null) {
-                boolean laterUserExists = false;
-            
-                for(String key : properties.stringPropertyNames()) {
-                    if (key.startsWith("user.") && key.endsWith(".email")) {
-                        laterUserExists = true;
-                        break;
-                    }
-                }
-                if (!laterUserExists) {
-                break;
-                }
-            continue;
+        for (String key : properties.stringPropertyNames()) {
+            if (!key.startsWith("user.") || !key.endsWith(".email")) {
+                continue;
             }
-            if (normalizeEmail(storedEmail).equals(normalizedEmail)) {
-                return Optional.of(readUser(properties, i ));
+            String storedEmail = properties.getProperty(key);
+            if (!normalizeEmail(storedEmail).equals(normalizedEmail)) {
+                continue;
+            }
+            String idText = key.substring("user.".length(), key.length() - ".email".length());
+            
+            try {
+                long id = Long.parseLong(idText);
+                return Optional.of(readUser(properties, id));
+            } catch (NumberFormatException e) {
+                throw new IllegalStateException("Invalid user ID format in properties file: " + idText, e);
             }
         }
         
