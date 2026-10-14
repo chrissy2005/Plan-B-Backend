@@ -1,7 +1,7 @@
 package org.planb.repository;
 
 import org.planb.model.User;
-import org.springframework.stereotype.Repository;
+//import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,7 +15,7 @@ import java.util.Properties;
 
 
 
-@Repository
+//@Repository
 public class FileUserRepository implements UserRepository {
 
     private final Path filePath = Paths.get("data", "users.properties");

@@ -1,5 +1,7 @@
 package org.planb.service;
 
+import org.planb.repository.EmailAlreadyExistsException;
+
 import org.planb.model.User;
 import org.planb.repository.UserRepository;
 import org.planb.dto.CreateUserRequest;
@@ -44,7 +46,13 @@ public class UserService {
         String passwordHash = passwordEncoder.encode(request.getPassword());
 
         User user = new User(null, firstname, lastname, email, passwordHash);
-        userRepository.save(user);
-        return true; // User created successfully
+        /*userRepository.save(user);
+        return true; // User created successfully*/
+        try {
+            userRepository.save(user);
+            return true;
+        } catch (EmailAlreadyExistsException ex) {
+            return false;
+        }
     }
 }
