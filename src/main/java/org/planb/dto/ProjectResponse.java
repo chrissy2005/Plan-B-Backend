@@ -5,12 +5,14 @@ public class ProjectResponse {
     private String name;
     private String description;
     private Long createdByUserId;
+    private String message;
     
     public ProjectResponse(){
 
     }
 
-    public ProjectResponse(Long projectId, String projectName, String projectDescription, Long createdByUserId){
+    public ProjectResponse(String message, Long projectId, String projectName, String projectDescription, Long createdByUserId){
+        this.message = message;
         this.id = projectId;
         this.name = projectName;
         this.description = projectDescription;
@@ -31,6 +33,10 @@ public class ProjectResponse {
 
     public Long getCreatedByUserId() {
         return createdByUserId;
+    }
+
+    public String getMessage(){
+        return message;
     }
 
 }
