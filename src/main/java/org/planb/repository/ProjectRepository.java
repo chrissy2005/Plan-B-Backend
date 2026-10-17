@@ -13,7 +13,7 @@ public interface ProjectRepository {
 
   List<Project> findByCreatedUserId(Long createdUserId);
 
-  List<Project> searchProjectForUser(Long userId, String name, ProjectStatus status);
+  List<Project> findByProjectIds(List<Long> projectIds);
 
   boolean existsByProjectId(Long projectId);
 
