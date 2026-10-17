@@ -13,15 +13,15 @@ import java.util.Optional;
 public class JdbcUserRepository implements UserRepository {
 
     private static final String COLUMNS =
-            "benutzer_id, vorname, nachname, email, passwort_hash";
+            "user_id, first_name, last_name, email, password_hash";
 
     private static final RowMapper<User> USER_MAPPER = (rs, rowNum) ->
             new User(
-                    rs.getLong("benutzer_id"),
-                    rs.getString("vorname"),
-                    rs.getString("nachname"),
+                    rs.getLong("user_id"),
+                    rs.getString("first_name"),
+                    rs.getString("last_name"),
                     rs.getString("email"),
-                    rs.getString("passwort_hash")
+                    rs.getString("password_hash")
             );
 
     private final JdbcTemplate jdbcTemplate;
@@ -33,7 +33,7 @@ public class JdbcUserRepository implements UserRepository {
     @Override
     public Optional<User> findByEmail(String email) {
         String sql = "SELECT " + COLUMNS
-                + " FROM benutzer WHERE email = ?";
+                + " FROM users WHERE email = ?";
 
         return jdbcTemplate.query(sql, USER_MAPPER, normalizeEmail(email))
                 .stream()
@@ -47,7 +47,7 @@ public class JdbcUserRepository implements UserRepository {
         }
 
         String sql = "SELECT " + COLUMNS
-                + " FROM benutzer WHERE benutzer_id = ?";
+                + " FROM users WHERE user_id = ?";
 
         return jdbcTemplate.query(sql, USER_MAPPER, id)
                 .stream()
@@ -57,7 +57,7 @@ public class JdbcUserRepository implements UserRepository {
     @Override
     public boolean existsByEmail(String email) {
         Boolean exists = jdbcTemplate.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM benutzer WHERE email = ?)",
+                "SELECT EXISTS (SELECT 1 FROM users WHERE email = ?)",
                 Boolean.class,
                 normalizeEmail(email)
         );
@@ -72,7 +72,7 @@ public class JdbcUserRepository implements UserRepository {
         }
 
         String sql = """
-                INSERT INTO benutzer (vorname, nachname, email, passwort_hash)
+                INSERT INTO users (first_name, last_name, email, password_hash)
                 VALUES (?, ?, ?, ?)
                 ON CONFLICT (email) DO NOTHING
                 RETURNING
@@ -96,9 +96,9 @@ public class JdbcUserRepository implements UserRepository {
 
     private User updateExistingUser(User user) {
         String sql = """
-                UPDATE benutzer
-                SET vorname = ?, nachname = ?, email = ?, passwort_hash = ?
-                WHERE benutzer_id = ?
+                UPDATE users
+                SET first_name = ?, last_name = ?, email = ?, password_hash = ?
+                WHERE user_id = ?
                 RETURNING
                 """ + COLUMNS;
 
