@@ -7,11 +7,11 @@ import jakarta.validation.constraints.Size;
 public class CreateUserRequest {
     @NotBlank(message = "First name is required")
     @Size(max = 100, message = "First name must not exceed 100 characters")
-    private String firstname;
+    private String firstName;
 
     @NotBlank(message = "Last name is required")
     @Size(max = 100, message = "Last name must not exceed 100 characters")
-    private String lastname;
+    private String lastName;
 
 
     @NotBlank(message = "Email is required")
@@ -23,20 +23,20 @@ public class CreateUserRequest {
     @Size(min = 8, message = "Password must be at least 8 characters long")
     private String password;
 
-    public String getFirstname() {
-        return firstname;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setFirstname(String firstname) {
-        this.firstname = firstname;
+    public void setFirstName(String firstname) {
+        this.firstName = firstname;
     }
 
-    public String getLastname() {
-        return lastname;
+    public String getLastName() {
+        return lastName;
     }
 
-    public void setLastname(String lastname) {
-        this.lastname = lastname;
+    public void setLastName(String lastname) {
+        this.lastName = lastname;
     }
 
     public String getEmail() {
