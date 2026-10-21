@@ -3,6 +3,7 @@ package org.planb.service;
 import org.planb.dto.ProjectResponse;
 import org.planb.dto.AddProjectMemberRequest;
 import org.planb.dto.CreateProjectRequest;
+import org.planb.dto.ProjectDetailsResponse;
 import org.planb.model.Project;
 import org.planb.model.ProjectMembership;
 import org.planb.model.ProjectRole;
@@ -77,5 +78,31 @@ public class ProjectService {
         ProjectMembership membership = new ProjectMembership(projectId, newMember.getId(), request.getRole());
 
         projectMembershipRepository.save(membership);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectDetailsResponse getProjectDetails(Long projectId, String email){
+        Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
+
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is no member of the project "));
+
+        User createdByUser = null;
+        if(project.getCreatedByUserId() != null){
+            createdByUser = userRepository.findById(project.getCreatedByUserId()).orElseThrow(() -> new IllegalStateException("Project creator not found"));
+        }
+
+        ProjectDetailsResponse response = new ProjectDetailsResponse();
+        response.setProjectId(project.getId());
+        response.setName(project.getName());
+        response.setDescription(project.getDescription());
+        response.setStatus(project.getProjectStatus());
+        response.setRole(membership.getRole());
+        if(createdByUser != null){
+            response.setCreatedByUserFirstName(createdByUser.getFirstname());
+            response.setCreatedByUserLastName(createdByUser.getLastname());
+        }
+        return response;
     }
 }

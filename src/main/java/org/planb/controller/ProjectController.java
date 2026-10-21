@@ -4,6 +4,7 @@ import org.planb.dto.AddProjectMemberRequest;
 import org.planb.dto.CreateProjectRequest;
 import org.planb.dto.ProjectResponse;
 import org.planb.dto.MessageResponse;
+import org.planb.dto.ProjectDetailsResponse;
 import org.planb.service.ProjectService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+
 
 //import io.jsonwebtoken.security.Message;
 
@@ -51,6 +54,16 @@ public class ProjectController {
         String creatorEmail = authentication.getName();
         projectService.addMember(projectId, request, creatorEmail);
         return ResponseEntity.ok(new MessageResponse("member added"));
+    }
+    
+    @GetMapping("/{projectId}")
+    public ResponseEntity<ProjectDetailsResponse> getProjectDetails(@PathVariable Long projectId, Authentication authentication) {
+        
+        String email = authentication.getName();
+
+        ProjectDetailsResponse response = projectService.getProjectDetails(projectId, email);
+        
+        return ResponseEntity.ok(response);
     }
     
 }
