@@ -5,6 +5,7 @@ import org.planb.dto.CreateProjectRequest;
 import org.planb.dto.ProjectResponse;
 import org.planb.dto.MessageResponse;
 import org.planb.dto.ProjectDetailsResponse;
+import org.planb.dto.ProjectsViewResponse;
 import org.planb.service.ProjectService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.util.List;
 
 //import io.jsonwebtoken.security.Message;
 
@@ -66,4 +68,13 @@ public class ProjectController {
         return ResponseEntity.ok(response);
     }
     
+    @GetMapping
+    public ResponseEntity<List<ProjectsViewResponse>> getProjectView(Authentication authentication) {
+        
+        String email = authentication.getName();
+
+        List<ProjectsViewResponse> response = projectService.getProjectView(email);
+        
+        return ResponseEntity.ok(response);
+    }
 }

@@ -4,6 +4,7 @@ import org.planb.dto.ProjectResponse;
 import org.planb.dto.AddProjectMemberRequest;
 import org.planb.dto.CreateProjectRequest;
 import org.planb.dto.ProjectDetailsResponse;
+import org.planb.dto.ProjectsViewResponse;
 import org.planb.model.Project;
 import org.planb.model.ProjectMembership;
 import org.planb.model.ProjectRole;
@@ -15,6 +16,11 @@ import org.planb.repository.ProjectRepository;
 import org.planb.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service 
 public class ProjectService {
@@ -104,5 +110,23 @@ public class ProjectService {
             response.setCreatedByUserLastName(createdByUser.getLastname());
         }
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectsViewResponse> getProjectView(String email){
+        
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+
+        List<ProjectMembership> memberships = projectMembershipRepository.findAllByUserId(currentUser.getId());
+
+        if (memberships.isEmpty()){
+            return List.of();
+        }
+
+        List<Long> projectIds = memberships.stream().map(ProjectMembership::getProjectId).toList();
+        List<Project> projects = projectRepository.findByProjectIds(projectIds);
+        Map<Long, ProjectRole> roleByProjectId = memberships.stream().collect(Collectors.toMap(ProjectMembership::getProjectId, ProjectMembership::getRole));
+
+        return projects.stream().map(project -> new ProjectsViewResponse(project.getId(), project.getName(), project.getProjectStatus(), roleByProjectId.get(project.getId()))).toList();
     }
 }
