@@ -29,12 +29,12 @@ public class UserController {
         } else {
             return ResponseEntity.badRequest().body(new MessageResponse("User already exists"));
         }
-
-        @GetMapping("/me")
-        public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
-            return ResponseEntity.ok(userService.getCurrentUser(authentication.getName()));
-        }
     
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
+        return ResponseEntity.ok(userService.getCurrentUser(authentication.getName()));
     }
 
     @ExceptionHandler (MethodArgumentNotValidException.class)
