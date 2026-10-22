@@ -2,8 +2,10 @@ package org.planb.controller;
 
 import org.planb.dto.CreateUserRequest;
 import org.planb.dto.MessageResponse;
+import org.planb.dto.UserResponse;
 import org.planb.service.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +28,11 @@ public class UserController {
             return ResponseEntity.ok(new MessageResponse("User created successfully"));
         } else {
             return ResponseEntity.badRequest().body(new MessageResponse("User already exists"));
+        }
+
+        @GetMapping("/me")
+        public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
+            return ResponseEntity.ok(userService.getCurrentUser(authentication.getName()));
         }
     
     }
