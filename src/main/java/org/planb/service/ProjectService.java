@@ -16,7 +16,9 @@ import org.planb.repository.ProjectRepository;
 import org.planb.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -28,11 +30,13 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMembershipRepository projectMembershipRepository;
     private final UserRepository userRepository;
+    private final JdbcTemplate jdbcTemplate;
 
-    public ProjectService(ProjectRepository projectRepository, ProjectMembershipRepository projectMembershipRepository, UserRepository userRepository, JdbcProjectMembershipRepository jdbcProjectMembershipRepository){
+    public ProjectService(ProjectRepository projectRepository, ProjectMembershipRepository projectMembershipRepository, UserRepository userRepository, JdbcProjectMembershipRepository jdbcProjectMembershipRepository, JdbcTemplate jdbcTemplate){
         this.projectMembershipRepository = projectMembershipRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Transactional 
@@ -128,5 +132,93 @@ public class ProjectService {
         Map<Long, ProjectRole> roleByProjectId = memberships.stream().collect(Collectors.toMap(ProjectMembership::getProjectId, ProjectMembership::getRole));
 
         return projects.stream().map(project -> new ProjectsViewResponse(project.getId(), project.getName(), project.getProjectStatus(), roleByProjectId.get(project.getId()))).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getProjectMembers(Long projectId, String email) {
+        User currentUser = requireProjectMember(projectId, email);
+        return projectMembershipRepository.findAllByProjectId(projectId).stream()
+                .map(membership -> {
+                    User user = userRepository.findById(membership.getUserId())
+                            .orElseThrow(() -> new IllegalStateException("Project member not found"));
+                    Map<String, Object> member = new HashMap<>();
+                    member.put("userId", user.getId());
+                    member.put("firstName", user.getFirstname());
+                    member.put("lastName", user.getLastname());
+                    member.put("name", (user.getFirstname() + " " + user.getLastname()).trim());
+                    member.put("email", user.getEmail());
+                    member.put("role", membership.getRole());
+                    return member;
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getProjectMeetings(Long projectId, String email) {
+        requireProjectMember(projectId, email);
+        List<Map<String, Object>> meetings = jdbcTemplate.queryForList("""
+                SELECT meeting_id, project_id, title, description, starts_at, ends_at, is_completed
+                FROM meetings
+                WHERE project_id = ?
+                ORDER BY starts_at, meeting_id
+                """, projectId);
+        meetings.forEach(meeting -> {
+            Long meetingId = ((Number) meeting.get("meeting_id")).longValue();
+            meeting.put("meetingId", meetingId);
+            meeting.put("projectId", projectId);
+            meeting.put("startDateTime", meeting.remove("starts_at"));
+            meeting.put("endDateTime", meeting.remove("ends_at"));
+            meeting.put("done", meeting.remove("is_completed"));
+            meeting.put("priority", "MEDIUM");
+            meeting.put("participantIds", jdbcTemplate.queryForList(
+                    "SELECT user_id FROM meeting_participants WHERE meeting_id = ? ORDER BY user_id",
+                    Long.class, meetingId));
+        });
+        return meetings;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getProjectLongToDos(Long projectId, String email) {
+        requireProjectMember(projectId, email);
+        List<Map<String, Object>> todos = jdbcTemplate.queryForList("""
+                SELECT todo_id, project_id, title, description, starts_at, ends_at, is_completed, priority
+                FROM long_todos
+                WHERE project_id = ?
+                ORDER BY starts_at, todo_id
+                """, projectId);
+        todos.forEach(todo -> {
+            Long todoId = ((Number) todo.get("todo_id")).longValue();
+            todo.put("longToDoId", todoId);
+            todo.put("projectId", projectId);
+            todo.put("startDateTime", todo.remove("starts_at"));
+            todo.put("endDateTime", todo.remove("ends_at"));
+            todo.put("done", todo.remove("is_completed"));
+            todo.put("assignedMemberIds", jdbcTemplate.queryForList(
+                    "SELECT user_id FROM todo_participants WHERE todo_id = ? ORDER BY user_id",
+                    Long.class, todoId));
+            List<Map<String, Object>> subtasks = jdbcTemplate.queryForList("""
+                    SELECT subtask_id, title, description, is_completed, assignee_id, priority
+                    FROM subtasks
+                    WHERE todo_id = ?
+                    ORDER BY subtask_id
+                    """, todoId);
+            subtasks.forEach(subtask -> {
+                subtask.put("subtaskId", subtask.remove("subtask_id"));
+                subtask.put("done", subtask.remove("is_completed"));
+                subtask.put("assigneeId", subtask.remove("assignee_id"));
+            });
+            todo.put("subtasks", subtasks);
+        });
+        return todos;
+    }
+
+    private User requireProjectMember(Long projectId, String email) {
+        projectRepository.findByProjectId(projectId)
+                .orElseThrow(() -> new IllegalStateException("Project not found"));
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+        projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId())
+                .orElseThrow(() -> new SecurityException("no permission"));
+        return currentUser;
     }
 }

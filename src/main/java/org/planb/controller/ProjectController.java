@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
+import java.util.Map;
 
 //import io.jsonwebtoken.security.Message;
 
@@ -76,5 +77,23 @@ public class ProjectController {
         List<ProjectsViewResponse> response = projectService.getProjectView(email);
         
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{projectId}/members")
+    public ResponseEntity<List<Map<String, Object>>> getMembers(
+            @PathVariable Long projectId, Authentication authentication) {
+        return ResponseEntity.ok(projectService.getProjectMembers(projectId, authentication.getName()));
+    }
+
+    @GetMapping("/{projectId}/meetings")
+    public ResponseEntity<List<Map<String, Object>>> getMeetings(
+            @PathVariable Long projectId, Authentication authentication) {
+        return ResponseEntity.ok(projectService.getProjectMeetings(projectId, authentication.getName()));
+    }
+
+    @GetMapping("/{projectId}/long-todos")
+    public ResponseEntity<List<Map<String, Object>>> getLongToDos(
+            @PathVariable Long projectId, Authentication authentication) {
+        return ResponseEntity.ok(projectService.getProjectLongToDos(projectId, authentication.getName()));
     }
 }
