@@ -109,9 +109,21 @@ public class ProjectService {
             throw new IllegalStateException("user is already member");
         }
 
-        ProjectMembership membership = new ProjectMembership(projectId, newMember.getId(), request.getRole());
+        ProjectRole role = parseRole(request.getRole());
+        ProjectMembership membership = new ProjectMembership(projectId, newMember.getId(), role);
 
         projectMembershipRepository.save(membership);
+    }
+
+    private ProjectRole parseRole(String value) {
+        if (value == null) {
+            throw new IllegalArgumentException("role is required");
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "leader", "project_leader", "projektleiter", "projektleitung" -> ProjectRole.PROJECT_LEADER;
+            case "member", "teammitglied" -> ProjectRole.MEMBER;
+            default -> throw new IllegalArgumentException("invalid project role");
+        };
     }
 
     @Transactional(readOnly = true)
