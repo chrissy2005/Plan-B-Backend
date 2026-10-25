@@ -31,9 +31,9 @@ public class JdbcToDoParticipantsRepository implements ToDoParticipantsRepositor
             INSERT INTO todo_participants
                 (user_id, todo_id)
             VALUES (?, ?)
-            RETURNING
             ON CONFLICT (user_id, todo_id)
             DO NOTHING
+            RETURNING
             """ + COLUMNS;
 
             List<ToDoParticipants> saved = jdbcTemplate.query(
@@ -44,7 +44,8 @@ public class JdbcToDoParticipantsRepository implements ToDoParticipantsRepositor
             );
 
         if(saved.isEmpty()){
-            throw new IllegalStateException("Long-todo participant could not be saved");
+            return findByLongToDoAndUserId(participant.getToDoId(), participant.getUserId())
+                    .orElseThrow(() -> new IllegalStateException("Long-todo participant could not be saved"));
         }
 
         return saved.getFirst();

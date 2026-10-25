@@ -34,6 +34,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Locale;
+import org.planb.dto.UpdateProjectRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service 
 public class ProjectService {
@@ -69,7 +73,7 @@ public class ProjectService {
         String name = request.getName().trim();
         String description = request.getDescription();
         if(description != null){
-            description.trim();
+            description = description.trim();
         }
         Project project = new Project();
         project.setName(name);
@@ -92,21 +96,12 @@ public class ProjectService {
 
     @Transactional
     public void addMember(Long projectId, AddProjectMemberRequest request, String requesterEmail){
-        projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("project not found"));
-
-        User requester = userRepository.findByEmail(requesterEmail).orElseThrow(() -> new IllegalStateException("authenticated user could not be found"));
-
-        ProjectMembership requesterMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, requester.getId())
-                                                .orElseThrow(() -> new SecurityException("no permission"));
-        
-        if(requesterMembership.getRole() != ProjectRole.PROJECT_LEADER){
-            throw new SecurityException("no permission");
-        }
-
-        User newMember = userRepository.findByEmail(request.getEmail().trim()).orElseThrow(() -> new IllegalStateException("user not found"));
+        requireProjectLeader(projectId, requesterEmail);
+        User newMember = userRepository.findByEmail(request.getEmail().trim().toLowerCase(Locale.ROOT))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found"));
 
         if(projectMembershipRepository.existsByProjectIdAndUserId(projectId, newMember.getId())){
-            throw new IllegalStateException("user is already member");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "user is already member");
         }
 
         ProjectRole role = parseRole(request.getRole());
@@ -119,7 +114,7 @@ public class ProjectService {
         if (value == null) {
             throw new IllegalArgumentException("role is required");
         }
-        return switch (value.trim().toLowerCase()) {
+        return switch (value.trim().toLowerCase(Locale.ROOT)) {
             case "leader", "project_leader", "projektleiter", "projektleitung" -> ProjectRole.PROJECT_LEADER;
             case "member", "teammitglied" -> ProjectRole.MEMBER;
             default -> throw new IllegalArgumentException("invalid project role");
@@ -128,11 +123,9 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public ProjectDetailsResponse getProjectDetails(Long projectId, String email){
-        Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
-
-        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
-
-        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is no member of the project "));
+        User currentUser = requireProjectMember(projectId, email);
+        Project project = projectRepository.findByProjectId(projectId).orElseThrow();
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow();
 
         User createdByUser = null;
         if(project.getCreatedByUserId() != null){
@@ -248,14 +241,88 @@ public class ProjectService {
         return todos;
     }
 
-    private User requireProjectMember(Long projectId, String email) {
+    public User requireProjectMember(Long projectId, String email) {
         projectRepository.findByProjectId(projectId)
-                .orElseThrow(() -> new IllegalStateException("Project not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "project not found"));
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid token"));
         projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId())
                 .orElseThrow(() -> new SecurityException("no permission"));
         return currentUser;
+    }
+
+    // Serialize membership mutations per project, including concurrent last-leader changes.
+    // Call only within a transaction; lock before checking the requester's current role.
+    public User requireProjectLeader(Long projectId, String email) {
+        if (jdbcTemplate.queryForList("SELECT project_id FROM projects WHERE project_id = ? FOR UPDATE",
+                Long.class, projectId).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "project not found");
+        }
+        User user = requireProjectMember(projectId, email);
+        if (projectMembershipRepository.findByProjectIdAndUserId(projectId, user.getId())
+                .orElseThrow().getRole() != ProjectRole.PROJECT_LEADER) {
+            throw new SecurityException("no permission");
+        }
+        return user;
+    }
+
+    @Transactional
+    public void updateMemberRole(Long projectId, Long userId, String role, String email) {
+        requireProjectLeader(projectId, email);
+        ProjectMembership member = targetMember(projectId, userId);
+        ProjectRole newRole = parseRole(role);
+        if (newRole != ProjectRole.PROJECT_LEADER) protectLastLeader(projectId, member);
+        member.setRole(newRole);
+        projectMembershipRepository.save(member);
+    }
+
+    @Transactional
+    public void removeMember(Long projectId, Long userId, String email) {
+        requireProjectLeader(projectId, email);
+        ProjectMembership member = targetMember(projectId, userId);
+        protectLastLeader(projectId, member);
+        // Clear dependent assignments before deleting participant relations (composite FK).
+        jdbcTemplate.update("""
+                UPDATE subtasks SET assignee_id = NULL WHERE assignee_id = ?
+                AND todo_id IN (SELECT todo_id FROM long_todos WHERE project_id = ?)
+                """, userId, projectId);
+        jdbcTemplate.update("DELETE FROM todo_participants WHERE user_id = ? AND todo_id IN (SELECT todo_id FROM long_todos WHERE project_id = ?)", userId, projectId);
+        jdbcTemplate.update("DELETE FROM meeting_participants WHERE user_id = ? AND meeting_id IN (SELECT meeting_id FROM meetings WHERE project_id = ?)", userId, projectId);
+        projectMembershipRepository.deleteByProjectIdAndUSerId(projectId, userId);
+    }
+
+    private ProjectMembership targetMember(Long projectId, Long userId) {
+        return projectMembershipRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "member not found"));
+    }
+
+    private void protectLastLeader(Long projectId, ProjectMembership member) {
+        if (member.getRole() == ProjectRole.PROJECT_LEADER
+                && projectMembershipRepository.findByProjectIdAndRole(projectId, ProjectRole.PROJECT_LEADER).size() <= 1) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "last project leader");
+        }
+    }
+
+    @Transactional
+    public ProjectDetailsResponse updateProject(Long projectId, UpdateProjectRequest request, String email) {
+        requireProjectLeader(projectId, email);
+        Project project = projectRepository.findByProjectId(projectId).orElseThrow();
+        project.setName(request.name().trim());
+        project.setDescription(request.description() == null ? null : request.description().trim());
+        if (request.status() != null) project.setProjectStatus(request.status());
+        projectRepository.save(project);
+        return getProjectDetails(projectId, email);
+    }
+
+    @Transactional
+    public void deleteProject(Long projectId, String email) {
+        requireProjectLeader(projectId, email);
+        jdbcTemplate.update("DELETE FROM meetings WHERE project_id = ?", projectId);
+        // Explicit order also handles the composite subtask/participant foreign key.
+        jdbcTemplate.update("DELETE FROM subtasks WHERE todo_id IN (SELECT todo_id FROM long_todos WHERE project_id = ?)", projectId);
+        jdbcTemplate.update("DELETE FROM long_todos WHERE project_id = ?", projectId);
+        projectMembershipRepository.deleteByProjectId(projectId);
+        projectRepository.deleteByProjectId(projectId);
     }
 
     @Transactional 
@@ -266,10 +333,8 @@ public class ProjectService {
         }
 
         //check if projectId exists
-        Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
-
-        //load current user from JWT-token
-        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        User currentUser = requireProjectLeader(projectId, email);
+        Project project = projectRepository.findByProjectId(projectId).orElseThrow();
 
         //load project membership for the current user and requested project
         ProjectMembership currentMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("No project membership"));
