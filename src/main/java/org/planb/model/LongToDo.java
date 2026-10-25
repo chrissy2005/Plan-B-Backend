@@ -9,18 +9,20 @@ public class LongToDo {
     private String description;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private TaskPriority priority;
     private boolean done = false;
 
     public LongToDo(){
     }
 
-    public LongToDo( Long toDoId, Long projectId, String title, String description, LocalDateTime startTime, LocalDateTime endTime, boolean completed){
+    public LongToDo( Long toDoId, Long projectId, String title, String description, LocalDateTime startTime, LocalDateTime endTime, TaskPriority priority, boolean completed){
         this.toDoId = toDoId;
         this.projectId = projectId;
         this.title = title;
         this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
+        this.priority = priority;
         this.done = completed;
     }
 
@@ -44,7 +46,7 @@ public class LongToDo {
         return title;
     }
 
-    public void setNamTitle(String title) {
+    public void setTitle(String title) {
         this.title = title;
     }
 
@@ -70,6 +72,14 @@ public class LongToDo {
 
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
+    }
+
+    public TaskPriority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(TaskPriority priority) {
+        this.priority = priority;
     }
 
     public boolean isDone() {

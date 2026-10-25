@@ -19,10 +19,10 @@ public class CreateLongToDoRequest {
     private String description;
 
     @NotNull(message = "Start date and time is required")
-    private LocalDateTime startDate;
+    private LocalDateTime startDateTime;
 
     @NotNull(message = "End date and time is required")
-    private LocalDateTime endDate;
+    private LocalDateTime endDateTime;
 
     @NotNull(message = "Priority is required")
     private TaskPriority priority;
@@ -51,20 +51,20 @@ public class CreateLongToDoRequest {
         this.description = description;
     }
 
-    public LocalDateTime getStartDate() {
-        return startDate;
+    public LocalDateTime getStartDateTime() {
+        return startDateTime;
     }
 
-    public void setStartDate(LocalDateTime startDate) {
-        this.startDate = startDate;
+    public void setStartDateTime(LocalDateTime startDate) {
+        this.startDateTime = startDate;
     }
 
-    public LocalDateTime getEndDate() {
-        return endDate;
+    public LocalDateTime getEndDateTime() {
+        return endDateTime;
     }
 
-    public void setEndDate(LocalDateTime endDate) {
-        this.endDate = endDate;
+    public void setEndDateTime(LocalDateTime endDate) {
+        this.endDateTime = endDate;
     }
 
     public TaskPriority getPriority() {

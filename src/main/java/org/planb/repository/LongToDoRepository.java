@@ -14,7 +14,7 @@ public interface LongToDoRepository {
 LongToDo save(LongToDo longToDo);
 //create new longToDo or update a longToDo
 
-Optional<LongToDo> findbyId(Long LongToDoId);
+Optional<LongToDo> findById(Long LongToDoId);
 //load one specific longToDo
 
 List<LongToDo> findAllByProjectId(Long projectId);

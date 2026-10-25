@@ -28,10 +28,10 @@ List<Subtask> searchByLongTodo(Long longToDoId, TaskPriority priority, Boolean d
 Boolean existsById(Long subtaskId);
 //check if the subtask exists
 
-Void deleteById(Long subtaskId);
+void deleteById(Long subtaskId);
 //delete subtask by its ID
 
-Void deleteAllByLongToDoId(Long longToDoId);
+void deleteAllByLongToDoId(Long longToDoId);
 //delete all subtasks that belong to one longToDo
 
 }

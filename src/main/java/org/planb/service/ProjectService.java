@@ -2,17 +2,26 @@ package org.planb.service;
 
 import org.planb.dto.ProjectResponse;
 import org.planb.dto.AddProjectMemberRequest;
+import org.planb.dto.CreateLongToDoRequest;
 import org.planb.dto.CreateProjectRequest;
+import org.planb.dto.CreateSubtaskRequest;
 import org.planb.dto.ProjectDetailsResponse;
 import org.planb.dto.ProjectsViewResponse;
+import org.planb.dto.CreateLongToDoResponse;
+import org.planb.model.LongToDo;
 import org.planb.model.Project;
 import org.planb.model.ProjectMembership;
 import org.planb.model.ProjectRole;
 import org.planb.model.ProjectStatus;
+import org.planb.model.Subtask;
+import org.planb.model.ToDoParticipants;
 import org.planb.model.User;
 import org.planb.repository.JdbcProjectMembershipRepository;
+import org.planb.repository.LongToDoRepository;
 import org.planb.repository.ProjectMembershipRepository;
 import org.planb.repository.ProjectRepository;
+import org.planb.repository.SubtaskRepository;
+import org.planb.repository.ToDoParticipantsRepository;
 import org.planb.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,8 +30,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+//import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.HashSet;
 
 @Service 
 public class ProjectService {
@@ -31,12 +42,25 @@ public class ProjectService {
     private final ProjectMembershipRepository projectMembershipRepository;
     private final UserRepository userRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final LongToDoRepository longToDoRepository;
+    private final ToDoParticipantsRepository toDoParticipantsRepository;
+    private final SubtaskRepository subtaskRepository;
 
-    public ProjectService(ProjectRepository projectRepository, ProjectMembershipRepository projectMembershipRepository, UserRepository userRepository, JdbcProjectMembershipRepository jdbcProjectMembershipRepository, JdbcTemplate jdbcTemplate){
+    public ProjectService(ProjectRepository projectRepository,
+                          ProjectMembershipRepository projectMembershipRepository,
+                          UserRepository userRepository,
+                          JdbcProjectMembershipRepository jdbcProjectMembershipRepository,
+                          JdbcTemplate jdbcTemplate,
+                          LongToDoRepository longToDoRepository,
+                          ToDoParticipantsRepository toDoParticipantsRepository,
+                          SubtaskRepository subtaskRepository){
         this.projectMembershipRepository = projectMembershipRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.longToDoRepository = longToDoRepository;
+        this.toDoParticipantsRepository = toDoParticipantsRepository;
+        this.subtaskRepository = subtaskRepository;
     }
 
     @Transactional 
@@ -220,5 +244,98 @@ public class ProjectService {
         projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId())
                 .orElseThrow(() -> new SecurityException("no permission"));
         return currentUser;
+    }
+
+    @Transactional 
+    public CreateLongToDoResponse createLongToDo(Long projectId, CreateLongToDoRequest request, String email){
+        //check input times
+        if(!request.getEndDateTime().isAfter(request.getStartDateTime())){ 
+            throw new IllegalArgumentException("End date must be after start date");
+        }
+
+        //check if projectId exists
+        Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
+
+        //load current user from JWT-token
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+
+        //load project membership for the current user and requested project
+        ProjectMembership currentMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("No project membership"));
+    
+        //check if current user is PROJECT_LEADER
+        if(currentMembership.getRole() != ProjectRole.PROJECT_LEADER){
+            throw new SecurityException("No permission to create a longToDo");
+        }
+
+        //check AssignedMemberIds
+        List<Long> assignedMemberIds = request.getAssignedMemberIds() == null
+                                                ? List.of()
+                                                : request.getAssignedMemberIds();
+        
+        Set<Long> uniqueMemberIds = new HashSet<>(assignedMemberIds);
+        if(uniqueMemberIds.size() != assignedMemberIds.size()){
+            throw new IllegalArgumentException("Duplicate participants Ids ");
+        }
+
+        for(Long userId : uniqueMemberIds){
+            boolean isProjectMember = projectMembershipRepository.existsByProjectIdAndUserId(projectId, userId);
+            if(!isProjectMember){
+                throw new IllegalArgumentException("User is not a project member: " + userId);
+            }
+        }
+
+        //create Long-Todo
+        LongToDo longToDo = new LongToDo();
+        longToDo.setProjectId(projectId);
+        longToDo.setTitle(request.getTitle());
+        longToDo.setDescription(request.getDescription());
+        longToDo.setStartTime(request.getStartDateTime());
+        longToDo.setEndTime(request.getEndDateTime());
+        longToDo.setPriority(request.getPriority());
+        longToDo.setDone(false);
+
+        //save Long-Todo and get todo_id
+        LongToDo savedLongToDo = longToDoRepository.save(longToDo);
+        Long longToDoId = savedLongToDo.getToDoId();
+
+        //save participants of the Long-Todo
+        for(Long userId : uniqueMemberIds){
+            ToDoParticipants participant= new ToDoParticipants();
+            participant.setToDoId(longToDoId);
+            participant.setUserId(userId);
+            toDoParticipantsRepository.save(participant);
+        }
+
+        //save subtasks from long-todo
+        List<CreateSubtaskRequest> subtaskRequests = request.getSubtasks() == null
+                                        ? List.of()
+                                        : request.getSubtasks();
+        
+        for(CreateSubtaskRequest subtaskRequest : subtaskRequests){
+            
+            /* Optional Code: When the projectleader could assign AssigneeId of each subtask 
+
+            if(subtaskRequest.getAssigneeId() != null){
+                boolean assigneeIdIsMember = projectMembershipRepository.existsByProjectIdAndUserId(projectId, subtaskRequest.getAssigneeId());
+                if(!assigneeIdIsMember){
+                    throw new IllegalArgumentException("AssigneeId is not a project member ");
+                }
+            }
+            */
+
+            Subtask subtask = new Subtask();
+            subtask.setTitle(subtaskRequest.getTitle());
+            subtask.setDescription(subtaskRequest.getDescription());
+            subtask.setPriority(subtaskRequest.getPriority());
+            subtask.setLongToDoId(longToDoId);
+            subtask.setDone(false);
+            subtask.setAssigneeId(null);
+            subtaskRepository.save(subtask);
+        }
+
+        return new CreateLongToDoResponse("long todo created", longToDoId);
+
+
+
     }
 }
