@@ -32,6 +32,12 @@ public class AuthController {
         }
     }
 
+    // Stateless logout: clients discard the JWT. No server-side session exists.
+    @DeleteMapping
+    public ResponseEntity<Void> logout() {
+        return ResponseEntity.noContent().build();
+    }
+
     @ExceptionHandler (MethodArgumentNotValidException.class)
     public ResponseEntity<MessageResponse> handleValidationError(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult().getFieldErrors().get(0).getDefaultMessage();

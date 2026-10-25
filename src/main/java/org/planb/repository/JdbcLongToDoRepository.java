@@ -126,7 +126,7 @@ public class JdbcLongToDoRepository implements LongToDoRepository{
         String sql = """
             SELECT %s
             FROM long_todos
-            WHERE todo_id = ?
+            WHERE project_id = ?
             ORDER BY todo_id
             """.formatted(COLUMNS);
         return jdbcTemplate.query(sql, LONG_TODO_MAPPER, projectId);

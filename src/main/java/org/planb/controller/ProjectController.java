@@ -20,6 +20,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.planb.dto.UpdateMemberRoleRequest;
+import org.planb.dto.UpdateProjectRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -85,6 +89,33 @@ public class ProjectController {
     public ResponseEntity<List<Map<String, Object>>> getMembers(
             @PathVariable Long projectId, Authentication authentication) {
         return ResponseEntity.ok(projectService.getProjectMembers(projectId, authentication.getName()));
+    }
+
+    @PutMapping("/{projectId}/members/{userId}")
+    public ResponseEntity<MessageResponse> updateMemberRole(@PathVariable Long projectId,
+            @PathVariable Long userId, @Valid @RequestBody UpdateMemberRoleRequest request,
+            Authentication authentication) {
+        projectService.updateMemberRole(projectId, userId, request.role(), authentication.getName());
+        return ResponseEntity.ok(new MessageResponse("role updated"));
+    }
+
+    @DeleteMapping("/{projectId}/members/{userId}")
+    public ResponseEntity<Void> removeMember(@PathVariable Long projectId, @PathVariable Long userId,
+            Authentication authentication) {
+        projectService.removeMember(projectId, userId, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{projectId}")
+    public ResponseEntity<ProjectDetailsResponse> updateProject(@PathVariable Long projectId,
+            @Valid @RequestBody UpdateProjectRequest request, Authentication authentication) {
+        return ResponseEntity.ok(projectService.updateProject(projectId, request, authentication.getName()));
+    }
+
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<Void> deleteProject(@PathVariable Long projectId, Authentication authentication) {
+        projectService.deleteProject(projectId, authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{projectId}/meetings")
