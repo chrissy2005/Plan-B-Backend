@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.Map;
@@ -99,14 +100,22 @@ public class ProjectController {
 
     @GetMapping("/{projectId}/meetings")
     public ResponseEntity<List<Map<String, Object>>> getMeetings(
-            @PathVariable Long projectId, Authentication authentication) {
-        return ResponseEntity.ok(projectService.getProjectMeetings(projectId, authentication.getName()));
+            @PathVariable Long projectId, Authentication authentication,
+            @RequestParam(required = false) java.time.LocalDate from,
+            @RequestParam(required = false) java.time.LocalDate to,
+            @RequestParam(required = false) String sort) {
+        return ResponseEntity.ok(TaskListFilters.meetings(
+                projectService.getProjectMeetings(projectId, authentication.getName()), from, to, sort));
     }
 
     @GetMapping("/{projectId}/long-todos")
     public ResponseEntity<List<Map<String, Object>>> getLongToDos(
-            @PathVariable Long projectId, Authentication authentication) {
-        return ResponseEntity.ok(projectService.getProjectLongToDos(projectId, authentication.getName()));
+            @PathVariable Long projectId, Authentication authentication,
+            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) Boolean done,
+            @RequestParam(required = false) String sort) {
+        return ResponseEntity.ok(TaskListFilters.todos(
+                projectService.getProjectLongToDos(projectId, authentication.getName()), priority, done, sort));
     }
 
     @PostMapping("/{projectId}/long-todos")

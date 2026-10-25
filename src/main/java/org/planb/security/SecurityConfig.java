@@ -38,11 +38,23 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
+                .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight request from browser
                 .requestMatchers(HttpMethod.POST, "/users").permitAll() // Allow user creation without authentication
                 .requestMatchers(HttpMethod.POST, "/auth").permitAll() // Allow authentication without authentication
                 .anyRequest().authenticated() // Require authentication for all other requests
             )
+            .exceptionHandling(errors -> errors
+                .authenticationEntryPoint((request, response, error) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"message\":\"token wrong\"}");
+                })
+                .accessDeniedHandler((request, response, error) -> {
+                    response.setStatus(403);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"message\":\"no permission\"}");
+                }))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

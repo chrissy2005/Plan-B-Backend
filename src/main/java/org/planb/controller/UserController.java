@@ -25,7 +25,7 @@ public class UserController {
         boolean created = userService.createUser(request);
 
         if (created) {
-            return ResponseEntity.ok(new MessageResponse("User created successfully"));
+            return ResponseEntity.ok(new MessageResponse("user created"));
         } else {
             return ResponseEntity.badRequest().body(new MessageResponse("User already exists"));
         }
