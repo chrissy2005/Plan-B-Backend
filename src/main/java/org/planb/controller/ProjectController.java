@@ -7,6 +7,7 @@ import org.planb.dto.CreateProjectRequest;
 import org.planb.dto.ProjectResponse;
 import org.planb.dto.MessageResponse;
 import org.planb.dto.ProjectDetailsResponse;
+import org.planb.dto.ProjectMemberResponse;
 import org.planb.dto.ProjectsViewResponse;
 import org.planb.service.ProjectService;
 import jakarta.validation.Valid;
@@ -81,10 +82,19 @@ public class ProjectController {
         return ResponseEntity.ok(response);
     }
 
+    /* old AI-Method from 22.10
     @GetMapping("/{projectId}/members")
     public ResponseEntity<List<Map<String, Object>>> getMembers(
             @PathVariable Long projectId, Authentication authentication) {
         return ResponseEntity.ok(projectService.getProjectMembers(projectId, authentication.getName()));
+    }
+    */
+
+    @GetMapping("/{projectId}/members")
+    public ResponseEntity<List<ProjectMemberResponse>> getProjectmembers( @PathVariable Long projectId, Authentication authentication){
+        String email = authentication.getName();
+        List<ProjectMemberResponse> members = projectService.getProjectMembers(projectId, email);
+        return ResponseEntity.ok(members);
     }
 
     @GetMapping("/{projectId}/meetings")

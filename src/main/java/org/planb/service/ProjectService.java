@@ -6,6 +6,7 @@ import org.planb.dto.CreateLongToDoRequest;
 import org.planb.dto.CreateProjectRequest;
 import org.planb.dto.CreateSubtaskRequest;
 import org.planb.dto.ProjectDetailsResponse;
+import org.planb.dto.ProjectMemberResponse;
 import org.planb.dto.ProjectsViewResponse;
 import org.planb.dto.CreateLongToDoResponse;
 import org.planb.model.LongToDo;
@@ -158,6 +159,7 @@ public class ProjectService {
         return projects.stream().map(project -> new ProjectsViewResponse(project.getId(), project.getName(), project.getProjectStatus(), roleByProjectId.get(project.getId()))).toList();
     }
 
+    /* this was the old AI-Method from  22.10 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getProjectMembers(Long projectId, String email) {
         User currentUser = requireProjectMember(projectId, email);
@@ -176,6 +178,7 @@ public class ProjectService {
                 })
                 .toList();
     }
+    */
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getProjectMeetings(Long projectId, String email) {
@@ -337,5 +340,22 @@ public class ProjectService {
 
 
 
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectMemberResponse> getProjectMembers(Long projectId, String email){
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        boolean currentUserIsMember = projectMembershipRepository.existsByProjectIdAndUserId(projectId, currentUser.getId());
+        if(!currentUserIsMember){
+            throw new IllegalStateException("Project not found");
+        }
+
+        List<ProjectMembership> memberships = projectMembershipRepository.findAllByProjectId(projectId);
+
+        return memberships.stream().map(membership -> {
+            User user = userRepository.findById(membership.getUserId()).orElseThrow(() -> new IllegalStateException("User not found"));
+        
+            return new ProjectMemberResponse(user.getId(), user.getFirstname(), user.getLastname(), membership.getRole() );
+        }).toList();
     }
 }
