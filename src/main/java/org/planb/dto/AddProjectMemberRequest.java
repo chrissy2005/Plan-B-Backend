@@ -1,5 +1,7 @@
 package org.planb.dto;
 
+import org.planb.model.ProjectRole;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,7 +12,7 @@ public class AddProjectMemberRequest {
     private String email;
 
     @NotNull(message = "Role is required")
-    private String role;
+    private ProjectRole role;
 
     public AddProjectMemberRequest(){}
 
@@ -22,11 +24,11 @@ public class AddProjectMemberRequest {
         this.email = email;
     }
 
-    public String getRole() {
+    public ProjectRole getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(ProjectRole role) {
         this.role = role;
     }
 }
