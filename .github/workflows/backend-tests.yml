@@ -1,0 +1,90 @@
+name: Backend Tests
+
+on:
+  push:
+    branches:
+      - main
+      - ci/backend-tests
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: Build und Integrationstests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        shell: bash
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: planb_test
+          POSTGRES_USER: planb_test
+          POSTGRES_PASSWORD: planb_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U planb_test -d planb_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/planb_test
+      SPRING_DATASOURCE_USERNAME: planb_test
+      SPRING_DATASOURCE_PASSWORD: planb_ci_only
+      SPRING_SQL_INIT_MODE: never
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "2"
+
+    steps:
+      - name: Repository laden
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Java 25 einrichten
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+
+      - name: JWT-Schluessel fuer diesen Testlauf erzeugen
+        run: |
+          test_key="$(openssl rand -base64 32)"
+          echo "::add-mask::$test_key"
+          echo "SECURITY_JWT_SECRET=$test_key" >> "$GITHUB_ENV"
+
+      - name: Datenbankschema aufbauen
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          for migration in database/[0-9][0-9][0-9]_*.sql; do
+            echo "Wende Migration an: $migration"
+            docker exec -i "$POSTGRES_CONTAINER" \
+              psql -X -U planb_test -d planb_test \
+              --set=ON_ERROR_STOP=1 < "$migration"
+          done
+
+      - name: Backend bauen und Tests ausfuehren
+        run: bash ./gradlew --no-daemon build
+
+      - name: Testberichte speichern
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-testberichte
+          path: |
+            build/reports/tests/test/
+            build/test-results/test/
+          if-no-files-found: warn
+          retention-days: 7
