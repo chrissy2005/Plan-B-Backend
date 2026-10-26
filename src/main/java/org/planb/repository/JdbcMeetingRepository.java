@@ -2,16 +2,10 @@ package org.planb.repository;
 
 import org.planb.model.Meeting;
 import java.time.LocalDateTime;
-import org.springframework.transaction.annotation.Transactional; //Ki Log 31
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import org.springframework.jdbc.core.RowCallbackHandler; //KI Log 42
 
-import java.util.ArrayList; //KI Log 42
-import java.util.HashMap;   //KI Log 42
-import java.util.Map;       //KI Log 42
-import java.util.Objects;   //KI Log 42
 import java.util.List;
 import java.util.Optional;
 
@@ -39,8 +33,6 @@ private static final String COLUMNS =
         this.jdbcTemplate = jdbcTemplate;
     }
 
-@Transactional //KI log 31
-
 @Override
 public Meeting save (Meeting meeting){
  if (meeting.getMeetingId() != null) {
@@ -64,38 +56,8 @@ Meeting savedMeeting = jdbcTemplate.query(
                 meeting.isDone()
         ).getFirst(); //KI log 32 (verbesserung)
 
-//KI Log 30, angepasst durch KI Log 42
-        List<Long> participantIds = normalizeParticipantIds(meeting.getParticipantIds());
-        insertParticipants(savedMeeting.getMeetingId(), participantIds);
-        savedMeeting.setParticipantIds(participantIds);
         
         return savedMeeting;
-}
-
-//KI Log 30
-private void insertParticipants(Long meetingId, List<Long> participantIds) {
-        if (participantIds == null || participantIds.isEmpty()) {
-            return;
-        }
-        String sql = """
-        INSERT INTO meeting_participants (meeting_id, user_id) 
-        VALUES (?, ?)
-        """;
-
-        List<Object[]> rows = participantIds.stream()
-                .map(userId -> new Object[]{meetingId, userId})
-                .toList();
-        jdbcTemplate.batchUpdate(sql, rows);
-    }
-//KI Log 42: entfernt doppelte und null-IDs aus der Teilnehmerliste
-private static List<Long> normalizeParticipantIds(List<Long> participantIds) {
-    if (participantIds == null) {
-        return List.of();
-    }
-    return participantIds.stream()
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
 }
 
 private Meeting updateExistingMeeting(Meeting meeting) {
@@ -120,27 +82,9 @@ private Meeting updateExistingMeeting(Meeting meeting) {
         ).stream() //KI Log 35
             .findFirst()  //KI Log 35
             .orElseThrow(() -> new IllegalStateException("meeting not found")); //KI Log 35
-//KI Log 35, angepasst durch KI Log 42
-    if (meeting.getParticipantIds() != null) {
-    List<Long> participantIds = normalizeParticipantIds(meeting.getParticipantIds());
-    replaceParticipants(meeting.getMeetingId(), participantIds);
-    updatedMeeting.setParticipantIds(participantIds);
-    } else {
-
-    updatedMeeting.setParticipantIds(jdbcTemplate.queryForList(
-            "SELECT user_id FROM meeting_participants WHERE meeting_id = ?",
-            Long.class,
-            meeting.getMeetingId()));
+            
+        return updatedMeeting;
 }
-return updatedMeeting;
-}
-
-//KI Log 35
-private void replaceParticipants(Long meetingId, List<Long> participantIds) {
-    jdbcTemplate.update("DELETE FROM meeting_participants WHERE meeting_id = ?", meetingId);
-    insertParticipants(meetingId, participantIds);
-}
-
    
 @Override
 public Optional<Meeting> findById(Long meetingId){
@@ -155,12 +99,6 @@ public Optional<Meeting> findById(Long meetingId){
                 .stream()
                 .findFirst();
     
-    //KI Log 39: Teilnehmer für Detailansicht nachladen
-    meeting.ifPresent(m -> m.setParticipantIds(jdbcTemplate.queryForList(
-        "SELECT user_id FROM meeting_participants WHERE meeting_id = ?",
-        Long.class,
-        meetingId)));
-    
     return meeting;
     }
 
@@ -170,30 +108,6 @@ public List<Meeting> findAllByProjectId(Long projectId){
 String sql = 
 "SELECT " + COLUMNS + " FROM meetings WHERE project_id = ? ORDER BY starts_at";
     List<Meeting> meetings = jdbcTemplate.query(sql, MEETINGS_MAPPER, projectId);
-
-    //KI Log 42
-    if (meetings.isEmpty()) {
-        return meetings;
-    }
-
-    String participantSql = """
-            SELECT mp.meeting_id, mp.user_id
-            FROM meeting_participants mp
-            JOIN meetings m ON m.meeting_id = mp.meeting_id
-            WHERE m.project_id = ?
-            """;
-
-    Map<Long, List<Long>> participantsByMeeting = new HashMap<>();
-    jdbcTemplate.query(participantSql, (RowCallbackHandler) rs ->
-            participantsByMeeting
-                    .computeIfAbsent(rs.getLong("meeting_id"), id -> new ArrayList<>())
-                    .add(rs.getLong("user_id")),
-            projectId);
-
-    for (Meeting meeting : meetings) {
-        meeting.setParticipantIds(
-                participantsByMeeting.getOrDefault(meeting.getMeetingId(), List.of()));
-    }
 
     return meetings;
 
