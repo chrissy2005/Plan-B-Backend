@@ -6,7 +6,12 @@ import org.springframework.transaction.annotation.Transactional; //Ki Log 31
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.jdbc.core.RowCallbackHandler; //KI Log 42
 
+import java.util.ArrayList; //KI Log 42
+import java.util.HashMap;   //KI Log 42
+import java.util.Map;       //KI Log 42
+import java.util.Objects;   //KI Log 42
 import java.util.List;
 import java.util.Optional;
 
@@ -59,10 +64,11 @@ Meeting savedMeeting = jdbcTemplate.query(
                 meeting.isDone()
         ).getFirst(); //KI log 32 (verbesserung)
 
-//KI Log 30
-        insertParticipants(savedMeeting.getMeetingId(), meeting.getParticipantIds());
-        savedMeeting.setParticipantIds(meeting.getParticipantIds());
-
+//KI Log 30, angepasst durch KI Log 42
+        List<Long> participantIds = normalizeParticipantIds(meeting.getParticipantIds());
+        insertParticipants(savedMeeting.getMeetingId(), participantIds);
+        savedMeeting.setParticipantIds(participantIds);
+        
         return savedMeeting;
 }
 
@@ -81,7 +87,16 @@ private void insertParticipants(Long meetingId, List<Long> participantIds) {
                 .toList();
         jdbcTemplate.batchUpdate(sql, rows);
     }
-
+//KI Log 42: entfernt doppelte und null-IDs aus der Teilnehmerliste
+private static List<Long> normalizeParticipantIds(List<Long> participantIds) {
+    if (participantIds == null) {
+        return List.of();
+    }
+    return participantIds.stream()
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+}
 
 private Meeting updateExistingMeeting(Meeting meeting) {
         
@@ -105,19 +120,19 @@ private Meeting updateExistingMeeting(Meeting meeting) {
         ).stream() //KI Log 35
             .findFirst()  //KI Log 35
             .orElseThrow(() -> new IllegalStateException("meeting not found")); //KI Log 35
-//KI Log 35
+//KI Log 35, angepasst durch KI Log 42
     if (meeting.getParticipantIds() != null) {
-        replaceParticipants(meeting.getMeetingId(), meeting.getParticipantIds());
-        updatedMeeting.setParticipantIds(meeting.getParticipantIds());
+    List<Long> participantIds = normalizeParticipantIds(meeting.getParticipantIds());
+    replaceParticipants(meeting.getMeetingId(), participantIds);
+    updatedMeeting.setParticipantIds(participantIds);
     } else {
-        
-        updatedMeeting.setParticipantIds(jdbcTemplate.queryForList(
-                "SELECT user_id FROM meeting_participants WHERE meeting_id = ?",
-                Long.class,
-                meeting.getMeetingId()));
-    }
 
-    return updatedMeeting;
+    updatedMeeting.setParticipantIds(jdbcTemplate.queryForList(
+            "SELECT user_id FROM meeting_participants WHERE meeting_id = ?",
+            Long.class,
+            meeting.getMeetingId()));
+}
+return updatedMeeting;
 }
 
 //KI Log 35
@@ -155,8 +170,35 @@ public List<Meeting> findAllByProjectId(Long projectId){
 String sql = 
 "SELECT " + COLUMNS + " FROM meetings WHERE project_id = ? ORDER BY starts_at";
     List<Meeting> meetings = jdbcTemplate.query(sql, MEETINGS_MAPPER, projectId);
+
+    //KI Log 42
+    if (meetings.isEmpty()) {
+        return meetings;
+    }
+
+    String participantSql = """
+            SELECT mp.meeting_id, mp.user_id
+            FROM meeting_participants mp
+            JOIN meetings m ON m.meeting_id = mp.meeting_id
+            WHERE m.project_id = ?
+            """;
+
+    Map<Long, List<Long>> participantsByMeeting = new HashMap<>();
+    jdbcTemplate.query(participantSql, (RowCallbackHandler) rs ->
+            participantsByMeeting
+                    .computeIfAbsent(rs.getLong("meeting_id"), id -> new ArrayList<>())
+                    .add(rs.getLong("user_id")),
+            projectId);
+
+    for (Meeting meeting : meetings) {
+        meeting.setParticipantIds(
+                participantsByMeeting.getOrDefault(meeting.getMeetingId(), List.of()));
+    }
+
     return meetings;
+
 }
+
 
 @Override 
 public boolean existsById(Long meetingId){
