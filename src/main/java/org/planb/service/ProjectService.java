@@ -1,7 +1,6 @@
 package org.planb.service;
 
 import org.planb.dto.ProjectResponse;
-import org.planb.controller.ApiException;
 import org.planb.dto.AddProjectMemberRequest;
 import org.planb.dto.CreateLongToDoRequest;
 import org.planb.dto.CreateProjectRequest;
@@ -94,24 +93,21 @@ public class ProjectService {
 
     @Transactional
     public void addMember(Long projectId, AddProjectMemberRequest request, String requesterEmail){
-        projectRepository.findByProjectId(projectId).orElseThrow(() -> new ApiException(404, "project not found"));
-        // Serialize membership additions so a duplicate cannot become an UPSERT role change.
-        jdbcTemplate.queryForList("SELECT project_id FROM projects WHERE project_id = ? FOR UPDATE", Long.class, projectId);
+        projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("project not found"));
 
         User requester = userRepository.findByEmail(requesterEmail).orElseThrow(() -> new IllegalStateException("authenticated user could not be found"));
 
         ProjectMembership requesterMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, requester.getId())
-                                                .orElseThrow(() -> new ApiException(404, "project not found"));
+                                                .orElseThrow(() -> new SecurityException("no permission"));
         
         if(requesterMembership.getRole() != ProjectRole.PROJECT_LEADER){
             throw new SecurityException("no permission");
         }
 
-        User newMember = userRepository.findByEmail(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT))
-                .orElseThrow(() -> new ApiException(404, "user not found"));
+        User newMember = userRepository.findByEmail(request.getEmail().trim()).orElseThrow(() -> new IllegalStateException("user not found"));
 
         if(projectMembershipRepository.existsByProjectIdAndUserId(projectId, newMember.getId())){
-            throw new ApiException(400, "user is already member");
+            throw new IllegalStateException("user is already member");
         }
 
 
@@ -124,11 +120,11 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public ProjectDetailsResponse getProjectDetails(Long projectId, String email){
-        Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new ApiException(404, "project not found"));
+        Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
 
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
 
-        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new ApiException(404, "project not found"));
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is no member of the project "));
 
         User createdByUser = null;
         if(project.getCreatedByUserId() != null){
@@ -200,8 +196,8 @@ public class ProjectService {
             Long meetingId = ((Number) meeting.get("meeting_id")).longValue();
             meeting.put("meetingId", meetingId);
             meeting.put("projectId", projectId);
-            meeting.put("startDateTime", apiTime(meeting.remove("starts_at")));
-            meeting.put("endDateTime", apiTime(meeting.remove("ends_at")));
+            meeting.put("startDateTime", meeting.remove("starts_at"));
+            meeting.put("endDateTime", meeting.remove("ends_at"));
             meeting.put("done", meeting.remove("is_completed"));
             meeting.put("priority", "MEDIUM");
             meeting.put("participantIds", jdbcTemplate.queryForList(
@@ -224,8 +220,8 @@ public class ProjectService {
             Long todoId = ((Number) todo.get("todo_id")).longValue();
             todo.put("longToDoId", todoId);
             todo.put("projectId", projectId);
-            todo.put("startDateTime", apiTime(todo.remove("starts_at")));
-            todo.put("endDateTime", apiTime(todo.remove("ends_at")));
+            todo.put("startDateTime", todo.remove("starts_at"));
+            todo.put("endDateTime", todo.remove("ends_at"));
             todo.put("done", todo.remove("is_completed"));
             todo.put("assignedMemberIds", jdbcTemplate.queryForList(
                     "SELECT user_id FROM todo_participants WHERE todo_id = ? ORDER BY user_id",
@@ -248,34 +244,29 @@ public class ProjectService {
 
     private User requireProjectMember(Long projectId, String email) {
         projectRepository.findByProjectId(projectId)
-                .orElseThrow(() -> new ApiException(404, "project not found"));
+                .orElseThrow(() -> new IllegalStateException("Project not found"));
         User currentUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
         projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId())
-                .orElseThrow(() -> new ApiException(404, "project not found"));
+                .orElseThrow(() -> new SecurityException("no permission"));
         return currentUser;
-    }
-
-    private String apiTime(Object value) {
-        if (value instanceof java.sql.Timestamp timestamp) return timestamp.toLocalDateTime().toString();
-        return value == null ? null : value.toString();
     }
 
     @Transactional 
     public CreateLongToDoResponse createLongToDo(Long projectId, CreateLongToDoRequest request, String email){
         //check input times
         if(!request.getEndDateTime().isAfter(request.getStartDateTime())){ 
-            throw new IllegalArgumentException("end before start");
+            throw new IllegalArgumentException("End date must be after start date");
         }
 
         //check if projectId exists
-        Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new ApiException(404, "project not found"));
+        Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
 
         //load current user from JWT-token
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
 
         //load project membership for the current user and requested project
-        ProjectMembership currentMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new ApiException(404, "project not found"));
+        ProjectMembership currentMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("No project membership"));
     
         //check if current user is PROJECT_LEADER
         if(currentMembership.getRole() != ProjectRole.PROJECT_LEADER){
@@ -341,14 +332,14 @@ public class ProjectService {
             Subtask subtask = new Subtask();
             subtask.setTitle(subtaskRequest.getTitle());
             subtask.setDescription(subtaskRequest.getDescription());
-            subtask.setPriority(subtaskRequest.getPriority() == null ? org.planb.model.TaskPriority.MEDIUM : subtaskRequest.getPriority());
+            subtask.setPriority(subtaskRequest.getPriority());
             subtask.setLongToDoId(longToDoId);
             subtask.setDone(false);
             subtask.setAssigneeId(null);
             subtaskRepository.save(subtask);
         }
 
-        return new CreateLongToDoResponse("long to-do created", longToDoId);
+        return new CreateLongToDoResponse("long todo created", longToDoId);
 
 
 
@@ -356,10 +347,10 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<ProjectMemberResponse> getProjectMembers(Long projectId, String email){
-        User currentUser = requireProjectMember(projectId, email);
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
         boolean currentUserIsMember = projectMembershipRepository.existsByProjectIdAndUserId(projectId, currentUser.getId());
         if(!currentUserIsMember){
-            throw new ApiException(404, "project not found");
+            throw new IllegalStateException("Project not found");
         }
 
         List<ProjectMembership> memberships = projectMembershipRepository.findAllByProjectId(projectId);
@@ -367,9 +358,7 @@ public class ProjectService {
         return memberships.stream().map(membership -> {
             User user = userRepository.findById(membership.getUserId()).orElseThrow(() -> new IllegalStateException("User not found"));
         
-            ProjectMemberResponse response = new ProjectMemberResponse(user.getId(), user.getFirstname(), user.getLastname(), membership.getRole());
-            response.setEmail(user.getEmail());
-            return response;
+            return new ProjectMemberResponse(user.getId(), user.getFirstname(), user.getLastname(), membership.getRole() );
         }).toList();
     }
 }

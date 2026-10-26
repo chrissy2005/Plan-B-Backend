@@ -23,9 +23,6 @@ public class ProjectResponse {
         return id;
     }
 
-    // API-Design 19.10.2026; keep id as a backward-compatible alias.
-    public Long getProjectId() { return id; }
-
     public String getName() {
         return name;
     }

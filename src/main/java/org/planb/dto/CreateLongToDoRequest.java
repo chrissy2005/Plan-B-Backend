@@ -30,7 +30,8 @@ public class CreateLongToDoRequest {
     @NotEmpty(message = "At least one member is required")
     private List<Long> assignedMemberIds;
 
-    private List<@Valid CreateSubtaskRequest> subtasks;
+    @Valid 
+    private List<CreateSubtaskRequest> subtasks;
 
     public CreateLongToDoRequest(){}
 

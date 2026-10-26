@@ -6,7 +6,6 @@ public class ProjectMemberResponse {
     private Long userId;
     private String firstName;
     private String lastName;
-    private String email;
     private ProjectRole role;
 
     public ProjectMemberResponse(){
@@ -36,8 +35,6 @@ public class ProjectMemberResponse {
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
     public ProjectRole getRole() {
         return role;
     }
