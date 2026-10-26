@@ -5,7 +5,6 @@ import org.planb.dto.LoginRequest;
 import org.planb.dto.LoginResponse;
 import org.planb.dto.MessageResponse;
 import org.planb.service.AuthService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -27,8 +26,8 @@ public class AuthController {
         if (response.isPresent()) {
             return ResponseEntity.ok(response.get());
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new MessageResponse("Invalid email or password"));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("email or password wrong"));
         }
     }
 
