@@ -4,13 +4,16 @@ import org.planb.dto.AddProjectMemberRequest;
 import org.planb.dto.CreateLongToDoRequest;
 import org.planb.dto.CreateLongToDoResponse;
 import org.planb.dto.CreateProjectRequest;
+import org.planb.dto.CreateMeetingRequest;
 import org.planb.dto.LongToDosResponse;
 import org.planb.dto.ProjectResponse;
 import org.planb.dto.MessageResponse;
 import org.planb.dto.ProjectDetailsResponse;
 import org.planb.dto.ProjectMemberResponse;
 import org.planb.dto.ProjectsViewResponse;
+import org.planb.dto.CreateMeetingResponse;
 import org.planb.service.ProjectService;
+import org.planb.service.MeetingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -32,8 +35,10 @@ import java.util.Map;
 @RequestMapping("/projects")
 public class ProjectController {
     private final ProjectService projectService;
-    public ProjectController(ProjectService projectService){
+    private final MeetingService meetingService;
+    public ProjectController(ProjectService projectService, MeetingService meetingService){
         this.projectService = projectService;
+        this.meetingService = meetingService;
     }
 
     @PostMapping 
@@ -125,6 +130,14 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.getProjectMeetings(projectId, authentication.getName()));
     }
 
+     @PostMapping("/{projectId}/meetings")
+    public ResponseEntity<CreateMeetingResponse> createMeeting(@PathVariable Long projectId, @RequestBody @Valid CreateMeetingRequest request, Authentication authentication) {
+        String creatorEmail = authentication.getName();
+        CreateMeetingResponse response = meetingService.createMeeting(projectId, request, creatorEmail);
+        return ResponseEntity.ok(response);
+        
+    }
+
     @GetMapping("/{projectId}/long-todos")
     public ResponseEntity<List<LongToDosResponse>> getLongToDos(@PathVariable Long projectId, Authentication authentication) {
         String email = authentication.getName();
@@ -139,4 +152,5 @@ public class ProjectController {
         return ResponseEntity.ok(response);
         
     }
+
 }
