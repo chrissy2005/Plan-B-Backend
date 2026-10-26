@@ -113,7 +113,9 @@ public class ProjectService {
 
         ProjectMembership membership = new ProjectMembership(projectId, newMember.getId(), request.getRole());
 
-        projectMembershipRepository.save(membership);
+        if (!projectMembershipRepository.addIfAbsent(membership)) {
+            throw new IllegalStateException("user is already member");
+        }
     }
 
 
@@ -358,7 +360,9 @@ public class ProjectService {
         return memberships.stream().map(membership -> {
             User user = userRepository.findById(membership.getUserId()).orElseThrow(() -> new IllegalStateException("User not found"));
         
-            return new ProjectMemberResponse(user.getId(), user.getFirstname(), user.getLastname(), membership.getRole() );
+            ProjectMemberResponse response = new ProjectMemberResponse(user.getId(), user.getFirstname(), user.getLastname(), membership.getRole());
+            response.setEmail(user.getEmail());
+            return response;
         }).toList();
     }
 }

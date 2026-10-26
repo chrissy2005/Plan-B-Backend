@@ -58,8 +58,14 @@ public class ProjectController {
     public ResponseEntity<MessageResponse> addMember(@PathVariable Long projectId, @RequestBody @Valid AddProjectMemberRequest request, Authentication authentication) {
         
         String creatorEmail = authentication.getName();
-        projectService.addMember(projectId, request, creatorEmail);
-        return ResponseEntity.ok(new MessageResponse("member added"));
+        try {
+            projectService.addMember(projectId, request, creatorEmail);
+            return ResponseEntity.ok(new MessageResponse("member added"));
+        } catch (SecurityException exception) {
+            return ResponseEntity.status(403).body(new MessageResponse("no permission"));
+        } catch (IllegalStateException exception) {
+            return memberError(exception);
+        }
     }
     
     @GetMapping("/{projectId}")
@@ -91,10 +97,25 @@ public class ProjectController {
     */
 
     @GetMapping("/{projectId}/members")
-    public ResponseEntity<List<ProjectMemberResponse>> getProjectmembers( @PathVariable Long projectId, Authentication authentication){
+    public ResponseEntity<?> getProjectmembers( @PathVariable Long projectId, Authentication authentication){
         String email = authentication.getName();
-        List<ProjectMemberResponse> members = projectService.getProjectMembers(projectId, email);
-        return ResponseEntity.ok(members);
+        try {
+            List<ProjectMemberResponse> members = projectService.getProjectMembers(projectId, email);
+            return ResponseEntity.ok(members);
+        } catch (IllegalStateException exception) {
+            return memberError(exception);
+        }
+    }
+
+    private ResponseEntity<MessageResponse> memberError(IllegalStateException exception) {
+        String message = exception.getMessage();
+        if ("user is already member".equals(message)) {
+            return ResponseEntity.badRequest().body(new MessageResponse(message));
+        }
+        if ("project not found".equalsIgnoreCase(message) || "user not found".equalsIgnoreCase(message)) {
+            return ResponseEntity.status(404).body(new MessageResponse(message.toLowerCase(java.util.Locale.ROOT)));
+        }
+        throw exception;
     }
 
     @GetMapping("/{projectId}/meetings")

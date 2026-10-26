@@ -59,6 +59,15 @@ public class JdbcProjectMembershipRepository implements ProjectMembershipReposit
         return savedMemberships.getFirst();
     }
 
+    @Override
+    public boolean addIfAbsent(ProjectMembership membership) {
+        return jdbcTemplate.update("""
+            INSERT INTO projectmembership (project_id, user_id, role)
+            VALUES (?, ?, ?)
+            ON CONFLICT (project_id, user_id) DO NOTHING
+            """, membership.getProjectId(), membership.getUserId(), membership.getRole().name()) == 1;
+    }
+
     @Override 
     public Optional<ProjectMembership> findByProjectIdAndUserId(Long projectId, Long userId){
     

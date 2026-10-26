@@ -8,6 +8,7 @@ import java.util.Optional;
 public interface ProjectMembershipRepository {
     
     ProjectMembership save(ProjectMembership membership);   //sava and update ProjectMembership
+    boolean addIfAbsent(ProjectMembership membership);
 
     Optional<ProjectMembership> findByProjectIdAndUserId(Long projectId, Long userId);  //find Role of one projectmember
 
