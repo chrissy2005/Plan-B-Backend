@@ -4,6 +4,7 @@ import org.planb.dto.AddProjectMemberRequest;
 import org.planb.dto.CreateLongToDoRequest;
 import org.planb.dto.CreateLongToDoResponse;
 import org.planb.dto.CreateProjectRequest;
+import org.planb.dto.LongToDosResponse;
 import org.planb.dto.ProjectResponse;
 import org.planb.dto.MessageResponse;
 import org.planb.dto.ProjectDetailsResponse;
@@ -125,9 +126,10 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}/long-todos")
-    public ResponseEntity<List<Map<String, Object>>> getLongToDos(
-            @PathVariable Long projectId, Authentication authentication) {
-        return ResponseEntity.ok(projectService.getProjectLongToDos(projectId, authentication.getName()));
+    public ResponseEntity<List<LongToDosResponse>> getLongToDos(@PathVariable Long projectId, Authentication authentication) {
+        String email = authentication.getName();
+        List<LongToDosResponse> longToDos = projectService.getLongToDos(projectId, email);
+        return ResponseEntity.ok(longToDos);
     }
 
     @PostMapping("/{projectId}/long-todos")

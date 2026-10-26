@@ -5,9 +5,11 @@ import org.planb.dto.AddProjectMemberRequest;
 import org.planb.dto.CreateLongToDoRequest;
 import org.planb.dto.CreateProjectRequest;
 import org.planb.dto.CreateSubtaskRequest;
+import org.planb.dto.LongToDosResponse;
 import org.planb.dto.ProjectDetailsResponse;
 import org.planb.dto.ProjectMemberResponse;
 import org.planb.dto.ProjectsViewResponse;
+import org.planb.dto.SubtaskResponse;
 import org.planb.dto.CreateLongToDoResponse;
 import org.planb.model.LongToDo;
 import org.planb.model.Project;
@@ -209,6 +211,7 @@ public class ProjectService {
         return meetings;
     }
 
+    /* this was the old AI-Method from 22.10
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getProjectLongToDos(Long projectId, String email) {
         requireProjectMember(projectId, email);
@@ -243,7 +246,7 @@ public class ProjectService {
         });
         return todos;
     }
-
+    */
     private User requireProjectMember(Long projectId, String email) {
         projectRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new IllegalStateException("Project not found"));
@@ -365,4 +368,29 @@ public class ProjectService {
             return response;
         }).toList();
     }
+
+    @Transactional(readOnly = true)
+    public List<LongToDosResponse> getLongToDos(Long projectId, String email){
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("Project not found"));
+       
+        List<LongToDo> longToDos = longToDoRepository.findAllByProjectId(projectId);
+
+        if(membership.getRole() == ProjectRole.MEMBER){
+            longToDos = longToDos.stream().filter(longToDo -> toDoParticipantsRepository.existsByLongTodoIdAndUserId(longToDo.getToDoId(), currentUser.getId()))
+                        .toList();
+        }
+
+        return longToDos.stream().map(this::toLongToDosResponse).toList();
+    }
+
+    private LongToDosResponse toLongToDosResponse(LongToDo longToDo){
+        List<SubtaskResponse> subtasks = subtaskRepository.findByLongToDoId(longToDo.getToDoId()).stream().map(this::toSubtaskResponse).toList();
+        return new LongToDosResponse(longToDo.getToDoId(), longToDo.getTitle(), longToDo.getDescription(), longToDo.getPriority(), longToDo.getStartTime(), longToDo.getEndTime(), longToDo.isDone(), subtasks);
+    }
+
+    private SubtaskResponse toSubtaskResponse(Subtask subtask){
+        return new SubtaskResponse(subtask.getTitle(), subtask.getDescription(), subtask.getSubtaskId(), subtask.isDone(), subtask.getAssigneeId(), subtask.getPriority());
+    }
+
 }
