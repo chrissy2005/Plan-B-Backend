@@ -31,9 +31,9 @@ public class JdbcToDoParticipantsRepository implements ToDoParticipantsRepositor
             INSERT INTO todo_participants
                 (user_id, todo_id)
             VALUES (?, ?)
+            RETURNING
             ON CONFLICT (user_id, todo_id)
             DO NOTHING
-            RETURNING
             """ + COLUMNS;
 
             List<ToDoParticipants> saved = jdbcTemplate.query(
@@ -44,8 +44,7 @@ public class JdbcToDoParticipantsRepository implements ToDoParticipantsRepositor
             );
 
         if(saved.isEmpty()){
-            return findByLongToDoAndUserId(participant.getToDoId(), participant.getUserId())
-                    .orElseThrow(() -> new IllegalStateException("Long-todo participant could not be saved"));
+            throw new IllegalStateException("Long-todo participant could not be saved");
         }
 
         return saved.getFirst();
@@ -103,7 +102,7 @@ public class JdbcToDoParticipantsRepository implements ToDoParticipantsRepositor
                 SELECT 1
                 FROM todo_participants
                 WHERE user_id = ?
-                 AND todo_id = ?
+                 AND todo_id
             ) """;
         Boolean exists = jdbcTemplate.queryForObject(sql, Boolean.class, userId, longToDoId);
         return Boolean.TRUE.equals(exists);

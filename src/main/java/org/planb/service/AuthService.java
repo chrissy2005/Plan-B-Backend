@@ -36,7 +36,7 @@ public class AuthService {
             }
             String token = jwtService.generateToken(user);
             //LoginResponse response = new LoginResponse("login succesfully", token, user.getId());
-            LoginResponse response = new LoginResponse(token, "login successful", user.getId());
+            LoginResponse response = new LoginResponse(token, "Login successful", user.getId());
             return Optional.of(response);
     }
 }

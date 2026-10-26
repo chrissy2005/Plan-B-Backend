@@ -36,8 +36,12 @@ public class ProjectMemberResponse {
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public String getEmail() {
+        return email;
+    }
+    public void setEmail(String email) {
+        this.email = email;
+    }
     public ProjectRole getRole() {
         return role;
     }

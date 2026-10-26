@@ -16,7 +16,7 @@ public class CreateSubtaskRequest {
 
     private Long assigneeId;
 
-    private TaskPriority priority = TaskPriority.MEDIUM;
+    private TaskPriority priority;
 
     public String getTitle() {
         return title;

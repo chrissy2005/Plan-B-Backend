@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.Map;
@@ -59,8 +58,14 @@ public class ProjectController {
     public ResponseEntity<MessageResponse> addMember(@PathVariable Long projectId, @RequestBody @Valid AddProjectMemberRequest request, Authentication authentication) {
         
         String creatorEmail = authentication.getName();
-        projectService.addMember(projectId, request, creatorEmail);
-        return ResponseEntity.ok(new MessageResponse("member added"));
+        try {
+            projectService.addMember(projectId, request, creatorEmail);
+            return ResponseEntity.ok(new MessageResponse("member added"));
+        } catch (SecurityException exception) {
+            return ResponseEntity.status(403).body(new MessageResponse("no permission"));
+        } catch (IllegalStateException exception) {
+            return memberError(exception);
+        }
     }
     
     @GetMapping("/{projectId}")
@@ -92,30 +97,37 @@ public class ProjectController {
     */
 
     @GetMapping("/{projectId}/members")
-    public ResponseEntity<List<ProjectMemberResponse>> getProjectmembers( @PathVariable Long projectId, Authentication authentication){
+    public ResponseEntity<?> getProjectmembers( @PathVariable Long projectId, Authentication authentication){
         String email = authentication.getName();
-        List<ProjectMemberResponse> members = projectService.getProjectMembers(projectId, email);
-        return ResponseEntity.ok(members);
+        try {
+            List<ProjectMemberResponse> members = projectService.getProjectMembers(projectId, email);
+            return ResponseEntity.ok(members);
+        } catch (IllegalStateException exception) {
+            return memberError(exception);
+        }
+    }
+
+    private ResponseEntity<MessageResponse> memberError(IllegalStateException exception) {
+        String message = exception.getMessage();
+        if ("user is already member".equals(message)) {
+            return ResponseEntity.badRequest().body(new MessageResponse(message));
+        }
+        if ("project not found".equalsIgnoreCase(message) || "user not found".equalsIgnoreCase(message)) {
+            return ResponseEntity.status(404).body(new MessageResponse(message.toLowerCase(java.util.Locale.ROOT)));
+        }
+        throw exception;
     }
 
     @GetMapping("/{projectId}/meetings")
     public ResponseEntity<List<Map<String, Object>>> getMeetings(
-            @PathVariable Long projectId, Authentication authentication,
-            @RequestParam(required = false) java.time.LocalDate from,
-            @RequestParam(required = false) java.time.LocalDate to,
-            @RequestParam(required = false) String sort) {
-        return ResponseEntity.ok(TaskListFilters.meetings(
-                projectService.getProjectMeetings(projectId, authentication.getName()), from, to, sort));
+            @PathVariable Long projectId, Authentication authentication) {
+        return ResponseEntity.ok(projectService.getProjectMeetings(projectId, authentication.getName()));
     }
 
     @GetMapping("/{projectId}/long-todos")
     public ResponseEntity<List<Map<String, Object>>> getLongToDos(
-            @PathVariable Long projectId, Authentication authentication,
-            @RequestParam(required = false) String priority,
-            @RequestParam(required = false) Boolean done,
-            @RequestParam(required = false) String sort) {
-        return ResponseEntity.ok(TaskListFilters.todos(
-                projectService.getProjectLongToDos(projectId, authentication.getName()), priority, done, sort));
+            @PathVariable Long projectId, Authentication authentication) {
+        return ResponseEntity.ok(projectService.getProjectLongToDos(projectId, authentication.getName()));
     }
 
     @PostMapping("/{projectId}/long-todos")
