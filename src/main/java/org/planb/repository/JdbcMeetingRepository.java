@@ -21,8 +21,10 @@ private static final String COLUMNS =
                     rs.getLong("project_id"),
                     rs.getString("title"),
                     rs.getString("description"),
-                    rs.getObject("starts_at", LocalDateTime.class),
-                    rs.getObject("ends_at", LocalDateTime.class),
+                    //rs.getObject("starts_at", LocalDateTime.class),
+                    //rs.getObject("ends_at", LocalDateTime.class),
+                    rs.getTimestamp("starts_at").toLocalDateTime(),
+                    rs.getTimestamp("ends_at").toLocalDateTime(),
                     rs.getBoolean("is_completed")
                     
             );
