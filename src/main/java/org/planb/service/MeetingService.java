@@ -12,6 +12,7 @@ import org.planb.repository.MeetingRepository;
 import org.planb.repository.MeetingParticipantsRepository;
 import org.planb.dto.CreateMeetingRequest;
 import org.planb.dto.CreateMeetingResponse;
+import org.planb.dto.MeetingsResponse;
 import org.planb.repository.ProjectMembershipRepository;
 
 import org.springframework.stereotype.Service;
@@ -92,5 +93,25 @@ public CreateMeetingResponse createMeeting (Long projectId, CreateMeetingRequest
         return new CreateMeetingResponse("meeting created", meetingId);
 
 
+}
+
+@Transactional(readOnly = true)
+public List<MeetingsResponse> getProjectMeetings(Long projectId, String email){
+    User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("Project not found"));
+       
+        List<Meeting> meetings = meetingRepository.findAllByProjectId(projectId);
+
+        if(membership.getRole() == ProjectRole.MEMBER){
+            meetings = meetings.stream().filter(meeting -> meetingParticipantsRepository.existsByMeetingIdAndUserId(meeting.getMeetingId(), currentUser.getId()))
+                        .toList();
+        }
+
+        return meetings.stream().map(this::toMeetingsResponse).toList();
+}
+
+private MeetingsResponse toMeetingsResponse(Meeting meeting){
+    List<Long> participantIds = meetingParticipantsRepository.findAllByMeetingId(meeting.getMeetingId()).stream().map(MeetingParticipants::getUserId).toList();
+    return new MeetingsResponse(meeting.getMeetingId(), meeting.getTitle(), meeting.getDescription(), meeting.getStartDateTime(), meeting.getEndDateTime(), meeting.isDone(), participantIds);
 }
 }

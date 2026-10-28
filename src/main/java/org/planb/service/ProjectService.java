@@ -187,6 +187,7 @@ public class ProjectService {
     }
     */
 
+    /* this was the old AI-Method from 22.10 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getProjectMeetings(Long projectId, String email) {
         requireProjectMember(projectId, email);
@@ -210,6 +211,7 @@ public class ProjectService {
         });
         return meetings;
     }
+    */
 
     /* this was the old AI-Method from 22.10
     @Transactional(readOnly = true)
@@ -247,6 +249,7 @@ public class ProjectService {
         return todos;
     }
     */
+   /* old ai-method (Hilfsmethode) 
     private User requireProjectMember(Long projectId, String email) {
         projectRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new IllegalStateException("Project not found"));
@@ -256,6 +259,7 @@ public class ProjectService {
                 .orElseThrow(() -> new SecurityException("no permission"));
         return currentUser;
     }
+    */
 
     @Transactional 
     public CreateLongToDoResponse createLongToDo(Long projectId, CreateLongToDoRequest request, String email){

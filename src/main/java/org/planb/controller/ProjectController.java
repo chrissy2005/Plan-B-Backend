@@ -6,6 +6,7 @@ import org.planb.dto.CreateLongToDoResponse;
 import org.planb.dto.CreateProjectRequest;
 import org.planb.dto.CreateMeetingRequest;
 import org.planb.dto.LongToDosResponse;
+import org.planb.dto.MeetingsResponse;
 import org.planb.dto.ProjectResponse;
 import org.planb.dto.MessageResponse;
 import org.planb.dto.ProjectDetailsResponse;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
-import java.util.Map;
+//import java.util.Map;
 
 //import io.jsonwebtoken.security.Message;
 
@@ -124,10 +125,19 @@ public class ProjectController {
         throw exception;
     }
 
+    /* old AI-Method from 22.10
     @GetMapping("/{projectId}/meetings")
     public ResponseEntity<List<Map<String, Object>>> getMeetings(
             @PathVariable Long projectId, Authentication authentication) {
         return ResponseEntity.ok(projectService.getProjectMeetings(projectId, authentication.getName()));
+    }
+    */
+
+    @GetMapping("/{projectId}/meetings")
+    public ResponseEntity<List<MeetingsResponse>> getMeetings(@PathVariable Long projectId, Authentication authentication) {
+        String creatorEmail = authentication.getName();
+        List<MeetingsResponse> meetings = meetingService.getProjectMeetings(projectId, creatorEmail);
+        return ResponseEntity.ok(meetings);
     }
 
      @PostMapping("/{projectId}/meetings")
