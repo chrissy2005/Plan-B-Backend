@@ -385,8 +385,9 @@ public class ProjectService {
     }
 
     private LongToDosResponse toLongToDosResponse(LongToDo longToDo){
+        List<Long> assignedMemberIds = toDoParticipantsRepository.findAllByLongToDoId(longToDo.getToDoId()).stream().map(ToDoParticipants::getUserId).toList();
         List<SubtaskResponse> subtasks = subtaskRepository.findByLongToDoId(longToDo.getToDoId()).stream().map(this::toSubtaskResponse).toList();
-        return new LongToDosResponse(longToDo.getToDoId(), longToDo.getTitle(), longToDo.getDescription(), longToDo.getPriority(), longToDo.getStartTime(), longToDo.getEndTime(), longToDo.isDone(), subtasks);
+        return new LongToDosResponse(longToDo.getToDoId(), longToDo.getTitle(), longToDo.getDescription(), longToDo.getPriority(), longToDo.getStartTime(), longToDo.getEndTime(), longToDo.isDone(), subtasks, assignedMemberIds);
     }
 
     private SubtaskResponse toSubtaskResponse(Subtask subtask){

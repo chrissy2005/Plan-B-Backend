@@ -14,10 +14,11 @@ public class LongToDosResponse {
     private LocalDateTime endDateTime;
     private boolean done;
     private List<SubtaskResponse> subtasks;
+    private List<Long> assignedMemberIds;
 
     public LongToDosResponse(){}
 
-    public LongToDosResponse(Long longToDoId, String title, String description, TaskPriority priority, LocalDateTime startDateTime, LocalDateTime endDateTime, boolean done, List<SubtaskResponse> subtasks) {
+    public LongToDosResponse(Long longToDoId, String title, String description, TaskPriority priority, LocalDateTime startDateTime, LocalDateTime endDateTime, boolean done, List<SubtaskResponse> subtasks, List<Long> assignedMemberIds) {
         this.longToDoId = longToDoId;
         this.title = title;
         this.description = description;
@@ -26,6 +27,7 @@ public class LongToDosResponse {
         this.endDateTime = endDateTime;
         this.done = done;
         this.subtasks = subtasks;
+        this.assignedMemberIds = assignedMemberIds;
     }
 
     public Long getLongToDoId() {
@@ -90,6 +92,14 @@ public class LongToDosResponse {
 
     public void setSubtasks(List<SubtaskResponse> subtasks) {
         this.subtasks = subtasks;
+    }
+
+    public List<Long> getAssignedMemberIds() {
+        return assignedMemberIds;
+    }
+
+    public void setAssignedMemberIds(List<Long> assignedMemberIds) {
+        this.assignedMemberIds = assignedMemberIds;
     }
 
 }
