@@ -56,7 +56,7 @@ Meeting savedMeeting = jdbcTemplate.query(
                 meeting.getStartDateTime(),
                 meeting.getEndDateTime(),
                 meeting.isDone()
-        ).getFirst(); //KI log 32 (verbesserung)
+        ).getFirst(); //KI Log 64
 
         
         return savedMeeting;
@@ -81,9 +81,9 @@ private Meeting updateExistingMeeting(Meeting meeting) {
                 meeting.getEndDateTime(),
                 meeting.isDone(), 
                 meeting.getMeetingId()
-        ).stream() //KI Log 35
-            .findFirst()  //KI Log 35
-            .orElseThrow(() -> new IllegalStateException("meeting not found")); //KI Log 35
+        ).stream() //KI Log 66
+            .findFirst()  //KI Log 66
+            .orElseThrow(() -> new IllegalStateException("meeting not found")); //KI Log 66
             
         return updatedMeeting;
 }
@@ -106,7 +106,7 @@ public Optional<Meeting> findById(Long meetingId){
 
 @Override
 public List<Meeting> findAllByProjectId(Long projectId){
-//KI Log 33 ->Implementierung, angepasst
+//KI Log 65
 String sql = 
 "SELECT " + COLUMNS + " FROM meetings WHERE project_id = ? ORDER BY starts_at";
     List<Meeting> meetings = jdbcTemplate.query(sql, MEETINGS_MAPPER, projectId);

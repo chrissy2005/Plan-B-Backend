@@ -4,11 +4,11 @@ import org.planb.model.MeetingParticipants;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import org.springframework.jdbc.core.RowCallbackHandler;
+import org.springframework.jdbc.core.RowCallbackHandler; //KI Log 65
 
-import java.util.ArrayList;
-import java.util.HashMap;   
-import java.util.Map;        
+import java.util.ArrayList; // KI Log 65
+import java.util.HashMap;   //KI Log 65
+import java.util.Map;        //KI Log 65
 import java.util.List;
 import java.util.Optional;
 import java.util.Collections;
@@ -109,7 +109,7 @@ public class JdbcMeetingParticipantsRepository implements MeetingParticipantsRep
             JOIN meetings m ON m.meeting_id = mp.meeting_id
             WHERE m.project_id = ?
             """;
-
+//KI Log 65
     Map<Long, List<Long>> participantsByMeeting = new HashMap<>();
     jdbcTemplate.query(participantSql, (RowCallbackHandler) rs ->
             participantsByMeeting

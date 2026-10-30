@@ -2,12 +2,12 @@ package org.planb.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import com.fasterxml.jackson.annotation.JsonIgnore; //KI Log 27
-import jakarta.validation.constraints.AssertTrue; //KI Log 27
-import jakarta.validation.constraints.NotNull; //KI Log 27
+import com.fasterxml.jackson.annotation.JsonIgnore; //KI Log 61
+import jakarta.validation.constraints.AssertTrue; //KI Log 61
+import jakarta.validation.constraints.NotNull; //KI Log 61
 
-import java.time.LocalDateTime; //KI Log 28
-import java.util.List; //KI Log 29
+import java.time.LocalDateTime; //KI Log 62
+import java.util.List; //KI Log 63
 
 public class CreateMeetingRequest {
 
@@ -16,16 +16,17 @@ public class CreateMeetingRequest {
      @Size(max = 100, message = "Meeting title must be at most 100 characters")
      private String title;
 
+     //KI Log 62
      @NotNull(message = "start missing")
-     private LocalDateTime startDateTime; //KI Log 28
+     private LocalDateTime startDateTime;
 
      @NotNull(message = "end missing")
      private LocalDateTime endDateTime;
 
-    private List<Long> participantIds; //KI Log 29
+    private List<Long> participantIds; //KI Log 63
     private String description;
 
-     //KI Log 27
+    //KI Log 61
     @JsonIgnore
     @AssertTrue(message = "end before start")
     public boolean isEndAfterStart() {
