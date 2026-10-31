@@ -23,7 +23,7 @@ public class LongToDoController {
 
     }
 
-    @PutMapping("/{longToDoOd}/subtasks/{subtaskId}")
+    @PutMapping("/{longToDoId}/subtasks/{subtaskId}")
     public ResponseEntity<LongToDosResponse> setSubtaskDone(@PathVariable Long longToDoId, @PathVariable Long subtaskId, @Valid @RequestBody UpdateSubtaskDoneRequest request, Authentication authentication) {
         String email = authentication.getName();
         LongToDosResponse response = projectService.setSubtaskDone(longToDoId, subtaskId, request, email);
