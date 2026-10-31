@@ -10,6 +10,7 @@ import org.planb.dto.ProjectDetailsResponse;
 import org.planb.dto.ProjectMemberResponse;
 import org.planb.dto.ProjectsViewResponse;
 import org.planb.dto.SubtaskResponse;
+import org.planb.dto.UpdateSubtaskDoneRequest;
 import org.planb.dto.CreateLongToDoResponse;
 import org.planb.model.LongToDo;
 import org.planb.model.Project;
@@ -398,4 +399,30 @@ public class ProjectService {
         return new SubtaskResponse(subtask.getTitle(), subtask.getDescription(), subtask.getSubtaskId(), subtask.isDone(), subtask.getAssigneeId(), subtask.getPriority());
     }
 
+    @Transactional 
+    public LongToDosResponse setSubtaskDone(Long longToDoId, Long subtaskId, UpdateSubtaskDoneRequest request, String email){
+        if(request == null || request.getUpdate() == null || !"done".equals(request.getUpdate().getAttribute()) || request.getUpdate().getNewValue() == null){
+            throw new IllegalArgumentException("Expected update.attribut = 'done' and a boolean newValue");
+        }
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        LongToDo longToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Long todo not found"));
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+        Subtask subtask = subtaskRepository.findByIdAndLongToDoId(subtaskId, longToDoId).orElseThrow(() -> new IllegalStateException("Subtask does not belong to this long todo"));
+
+        //check if requester is PROJECT_LEADER or MEMBER
+        boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+        boolean isAssigneeUser = subtask.getAssigneeId() != null && subtask.getAssigneeId().equals(currentUser.getId());
+        if(!isProjectLeader && !isAssigneeUser){
+            throw new IllegalStateException("User is not allowed to update this subtask");
+        }
+        boolean newDoneValue = request.getUpdate().getNewValue();
+        subtask.setDone(newDoneValue);
+        subtaskRepository.save(subtask);
+        List<Subtask> allSubtasks = subtaskRepository.findByLongToDoId(longToDoId);
+        boolean longToDoDone = !allSubtasks.isEmpty() && allSubtasks.stream().allMatch(Subtask::isDone);
+        longToDo.setDone(longToDoDone);
+        longToDoRepository.save(longToDo);
+        LongToDo updatedLongToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Updated long todo not found"));
+        return toLongToDosResponse(updatedLongToDo);
+    }
 }
