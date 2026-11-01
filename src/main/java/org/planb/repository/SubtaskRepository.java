@@ -28,6 +28,8 @@ List<Subtask> searchByLongTodo(Long longToDoId, TaskPriority priority, Boolean d
 Boolean existsById(Long subtaskId);
 //check if the subtask exists
 
+int claimIfUnassigned(Long subtaskId, Long userId);
+
 void deleteById(Long subtaskId);
 //delete subtask by its ID
 

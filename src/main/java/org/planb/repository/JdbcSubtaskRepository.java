@@ -192,6 +192,16 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
         return Boolean.TRUE.equals(exists);
     }
 
+    @Override
+    public int claimIfUnassigned(Long subtaskId, Long userId) {
+        return jdbcTemplate.update("""
+            UPDATE subtasks
+            SET assignee_id = ?
+            WHERE subtask_id = ?
+              AND assignee_id IS NULL
+            """, userId, subtaskId);
+    }
+
     @Override 
     public void deleteById(Long subtaskId){
         if(subtaskId == null){

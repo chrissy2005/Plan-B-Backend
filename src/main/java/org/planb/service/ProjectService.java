@@ -455,6 +455,42 @@ public class ProjectService {
         longToDoRepository.save(longToDo);
         LongToDo updatedLongToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Updated long-todo not found"));
         return toLongToDosResponse(updatedLongToDo);
+    }
 
+    @Transactional
+    public Subtask claimSubtask(Long longToDoId, Long subtaskId, String email) {
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+        LongToDo longToDo = longToDoRepository.findById(longToDoId)
+                .orElseThrow(() -> new IllegalStateException("Long todo not found"));
+
+        if (!projectMembershipRepository.existsByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId())) {
+            throw new SecurityException("User is not a project member");
+        }
+
+        Subtask subtask = subtaskRepository.findByIdAndLongToDoId(subtaskId, longToDoId)
+                .orElseThrow(() -> new IllegalStateException("Subtask does not belong to this long todo"));
+        if (subtask.getAssigneeId() != null
+                || subtaskRepository.claimIfUnassigned(subtaskId, currentUser.getId()) != 1) {
+            Long assigneeId = subtaskRepository.findByIdAndLongToDoId(subtaskId, longToDoId)
+                    .map(Subtask::getAssigneeId)
+                    .orElse(null);
+            throw new SubtaskAlreadyAssignedException(assigneeId);
+        }
+
+        return subtaskRepository.findByIdAndLongToDoId(subtaskId, longToDoId)
+                .orElseThrow(() -> new IllegalStateException("Subtask not found"));
+    }
+
+    public static class SubtaskAlreadyAssignedException extends RuntimeException {
+        private final Long assigneeId;
+
+        public SubtaskAlreadyAssignedException(Long assigneeId) {
+            this.assigneeId = assigneeId;
+        }
+
+        public Long getAssigneeId() {
+            return assigneeId;
+        }
     }
 }

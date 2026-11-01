@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
+import java.util.HashMap;
+import java.util.Map;
 
  @RestController
  @RequestMapping("/long-todos")
@@ -36,5 +38,25 @@ public class LongToDoController {
         String email = authentication.getName();
         LongToDosResponse response = projectService.setLongToDoDone(longToDoId, request.getDone(), email);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{longToDoId}/subtasks/{subtaskId}/claim")
+    public ResponseEntity<?> claimSubtask(
+            @PathVariable Long longToDoId,
+            @PathVariable Long subtaskId,
+            Authentication authentication) {
+        try {
+            return ResponseEntity.ok(projectService.claimSubtask(
+                    longToDoId, subtaskId, authentication.getName()));
+        } catch (ProjectService.SubtaskAlreadyAssignedException exception) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Subtask wurde bereits übernommen.");
+            response.put("assigneeId", exception.getAssigneeId());
+            return ResponseEntity.status(409).body(response);
+        } catch (SecurityException exception) {
+            return ResponseEntity.status(403).body(exception.getMessage());
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.status(404).body(exception.getMessage());
+        }
     }
 }
