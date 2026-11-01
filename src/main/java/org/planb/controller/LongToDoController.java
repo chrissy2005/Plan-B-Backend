@@ -2,6 +2,8 @@ package org.planb.controller;
 
 import org.planb.dto.LongToDosResponse;
 import org.planb.dto.ClaimSubtaskRequest;
+import org.planb.dto.AssignSubtaskRequest;
+import org.planb.dto.MessageResponse;
 import org.planb.dto.UpdateLongToDoDone;
 import org.planb.dto.UpdateSubtaskDoneRequest;
 import org.planb.service.ProjectService;
@@ -59,6 +61,30 @@ public class LongToDoController {
             return ResponseEntity.status(403).body(exception.getMessage());
         } catch (IllegalStateException exception) {
             return ResponseEntity.status(404).body(exception.getMessage());
+        }
+    }
+
+    @PutMapping("/{longToDoId}/subtasks/{subtaskId}/assignment")
+    public ResponseEntity<?> assignSubtask(
+                @PathVariable Long longToDoId,
+                @PathVariable Long subtaskId,
+                @RequestBody AssignSubtaskRequest request,
+                Authentication authentication) {
+        try {
+            String message = projectService.assignSubtask(
+                    longToDoId, subtaskId, request, authentication.getName());
+            return ResponseEntity.ok(new MessageResponse(message));
+        } catch (ProjectService.SubtaskAlreadyAssignedException exception) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "subtask is already assigned");
+            response.put("assigneeId", exception.getAssigneeId());
+            return ResponseEntity.status(409).body(response);
+        } catch (SecurityException exception) {
+            return ResponseEntity.status(403).body(new MessageResponse(exception.getMessage()));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(new MessageResponse(exception.getMessage()));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.status(409).body(new MessageResponse(exception.getMessage()));
         }
     }
 }

@@ -13,6 +13,7 @@ import org.planb.dto.SubtaskResponse;
 import org.planb.dto.UpdateSubtaskDoneRequest;
 import org.planb.dto.CreateLongToDoResponse;
 import org.planb.dto.ClaimSubtaskRequest;
+import org.planb.dto.AssignSubtaskRequest;
 import org.planb.model.LongToDo;
 import org.planb.model.Project;
 import org.planb.model.ProjectMembership;
@@ -493,5 +494,38 @@ public class ProjectService {
         public Long getAssigneeId() {
             return assigneeId;
         }
+    }
+
+    @Transactional
+    public String assignSubtask(Long longToDoId, Long subtaskId, AssignSubtaskRequest request, String email) {
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+        LongToDo longToDo = longToDoRepository.findById(longToDoId)
+                .orElseThrow(() -> new IllegalStateException("Long todo not found"));
+        if (!projectMembershipRepository.existsByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId())) {
+            throw new SecurityException("User is not a project member");
+        }
+        subtaskRepository.findByIdAndLongToDoId(subtaskId, longToDoId)
+                .orElseThrow(() -> new IllegalStateException("Subtask does not belong to this long todo"));
+
+        if (request == null || request.getFrom() == null || request.getTo() == null) {
+            throw new IllegalArgumentException("Fields 'from' and 'to' are required");
+        }
+        if (request.getAssigned() == null) {
+            if (subtaskRepository.releaseIfAssignedTo(subtaskId, currentUser.getId()) != 1) {
+                throw new IllegalStateException("Subtask is not assigned to the current user");
+            }
+            return "subtask is now free";
+        }
+        if (!currentUser.getId().equals(request.getAssigned())) {
+            throw new SecurityException("A subtask can only be assigned to the current user");
+        }
+        if (subtaskRepository.claimIfUnassigned(subtaskId, currentUser.getId()) != 1) {
+            throw new SubtaskAlreadyAssignedException(
+                    subtaskRepository.findByIdAndLongToDoId(subtaskId, longToDoId)
+                            .map(Subtask::getAssigneeId)
+                            .orElse(null));
+        }
+        return "subtask assigned";
     }
 }

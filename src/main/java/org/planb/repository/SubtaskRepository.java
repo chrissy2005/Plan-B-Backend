@@ -30,6 +30,8 @@ Boolean existsById(Long subtaskId);
 
 int claimIfUnassigned(Long subtaskId, Long userId);
 
+int releaseIfAssignedTo(Long subtaskId, Long userId);
+
 void deleteById(Long subtaskId);
 //delete subtask by its ID
 

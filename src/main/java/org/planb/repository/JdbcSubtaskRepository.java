@@ -202,6 +202,16 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
             """, userId, subtaskId);
     }
 
+    @Override
+    public int releaseIfAssignedTo(Long subtaskId, Long userId) {
+        return jdbcTemplate.update("""
+            UPDATE subtasks
+            SET assignee_id = NULL
+            WHERE subtask_id = ?
+              AND assignee_id = ?
+            """, subtaskId, userId);
+    }
+
     @Override 
     public void deleteById(Long subtaskId){
         if(subtaskId == null){
