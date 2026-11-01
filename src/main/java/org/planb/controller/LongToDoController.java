@@ -1,6 +1,7 @@
 package org.planb.controller;
 
 import org.planb.dto.LongToDosResponse;
+import org.planb.dto.ClaimSubtaskRequest;
 import org.planb.dto.UpdateLongToDoDone;
 import org.planb.dto.UpdateSubtaskDoneRequest;
 import org.planb.service.ProjectService;
@@ -44,10 +45,11 @@ public class LongToDoController {
     public ResponseEntity<?> claimSubtask(
             @PathVariable Long longToDoId,
             @PathVariable Long subtaskId,
+            @RequestBody ClaimSubtaskRequest request,
             Authentication authentication) {
         try {
             return ResponseEntity.ok(projectService.claimSubtask(
-                    longToDoId, subtaskId, authentication.getName()));
+                    longToDoId, subtaskId, request, authentication.getName()));
         } catch (ProjectService.SubtaskAlreadyAssignedException exception) {
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Subtask wurde bereits übernommen.");

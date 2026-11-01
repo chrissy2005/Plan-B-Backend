@@ -12,6 +12,7 @@ import org.planb.dto.ProjectsViewResponse;
 import org.planb.dto.SubtaskResponse;
 import org.planb.dto.UpdateSubtaskDoneRequest;
 import org.planb.dto.CreateLongToDoResponse;
+import org.planb.dto.ClaimSubtaskRequest;
 import org.planb.model.LongToDo;
 import org.planb.model.Project;
 import org.planb.model.ProjectMembership;
@@ -458,7 +459,7 @@ public class ProjectService {
     }
 
     @Transactional
-    public Subtask claimSubtask(Long longToDoId, Long subtaskId, String email) {
+    public Subtask claimSubtask(Long longToDoId, Long subtaskId, ClaimSubtaskRequest request, String email) {
         User currentUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
         LongToDo longToDo = longToDoRepository.findById(longToDoId)
