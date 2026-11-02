@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -161,6 +162,20 @@ public class ProjectController {
         CreateLongToDoResponse response = projectService.createLongToDo(projectId, request, creatorEmail);
         return ResponseEntity.ok(response);
         
+    }
+
+    @DeleteMapping ("/{projectId}/members/{userId}")
+    public ResponseEntity<MessageResponse> deleteMember(@PathVariable Long projectId, @PathVariable Long userId, Authentication authentication) {
+        String email = authentication.getName();
+        MessageResponse response = projectService.deleteMember(projectId, userId, email);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping ("/{projectId}")
+    public ResponseEntity<MessageResponse> deleteProject(@PathVariable Long projectId, Authentication authentication) {
+        String email = authentication.getName();
+        MessageResponse response = projectService.deleteProject(projectId, email);
+        return ResponseEntity.ok(response);
     }
 
 }
