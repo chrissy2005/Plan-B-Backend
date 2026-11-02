@@ -31,6 +31,6 @@ void deleteById(Long longTodoId);
 
 void deleteByProjectId(Long projectId);
 
-
+List<LongToDo> searchForDashboard(Long longToDoId,TaskPriority priority, Boolean done, LocalDateTime from, LocalDateTime to);
 }
 

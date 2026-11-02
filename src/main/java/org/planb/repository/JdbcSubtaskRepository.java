@@ -13,6 +13,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
+import java.time.LocalDateTime;
+//import java.sql.Timestamp;
 
 @Repository 
 public class JdbcSubtaskRepository implements SubtaskRepository{
@@ -259,5 +261,47 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
         return sortDirection == SortDirection.DESC
                 ? "DESC"
                 : "ASC";
+    }
+
+    @Override 
+    public List<Subtask> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, LocalDateTime from, LocalDateTime to) {
+        if(longToDoId == null){
+            return Collections.emptyList();
+        }
+        StringBuilder sql = new StringBuilder("""
+            SELECT %s
+            FROM subtasks
+            WHERE todo_id = ?
+            """.formatted(COLUMNS));
+        
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(longToDoId);
+
+        if(priority != null){
+            sql.append(" AND priority = ? ");
+            parameters.add(priority.name());
+        }
+        if(done != null){
+            sql.append(" AND is_completed = ? ");
+            parameters.add(done);
+        }
+        if(assigneeId != null){
+            sql.append(" AND assignee_id = ? ");
+            parameters.add(assigneeId);   
+        }
+
+        /* When Time attributes are added to the Subtask model, uncomment this code to filter by time range
+        if(from != null){
+            sql.append(" AND starts_at >= ? ");
+            parameters.add(Timestamp.valueOf(from));
+        }
+        if(to != null){
+            sql.append(" AND ends_at <= ? ");
+            parameters.add(Timestamp.valueOf(to));
+        }
+        sql.append(" ORDER BY starts_at ASC");
+        */
+        
+        return jdbcTemplate.query(sql.toString(), SUBTASK_MAPPER, parameters.toArray());
     }
 }

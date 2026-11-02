@@ -2,7 +2,7 @@ package org.planb.repository;
 
 import java.util.List;
 import java.util.Optional;
-
+import java.time.LocalDateTime;
 import org.planb.model.Subtask;
 import org.planb.model.SortDirection;
 import org.planb.model.SubtaskSortField;
@@ -38,4 +38,5 @@ void deleteById(Long subtaskId);
 void deleteAllByLongToDoId(Long longToDoId);
 //delete all subtasks that belong to one longToDo
 
+List<Subtask> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, LocalDateTime from, LocalDateTime to);
 }
