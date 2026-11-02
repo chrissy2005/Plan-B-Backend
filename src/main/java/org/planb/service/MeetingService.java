@@ -1,5 +1,6 @@
 package org.planb.service;
 
+import org.planb.model.LongToDo;
 import org.planb.model.Meeting;
 import org.planb.model.MeetingParticipants;
 import org.planb.model.Project;
@@ -13,6 +14,7 @@ import org.planb.repository.MeetingParticipantsRepository;
 import org.planb.dto.CreateMeetingRequest;
 import org.planb.dto.CreateMeetingResponse;
 import org.planb.dto.MeetingsResponse;
+import org.planb.dto.MessageResponse;
 import org.planb.repository.ProjectMembershipRepository;
 
 import org.springframework.stereotype.Service;
@@ -114,4 +116,19 @@ private MeetingsResponse toMeetingsResponse(Meeting meeting){
     List<Long> participantIds = meetingParticipantsRepository.findAllByMeetingId(meeting.getMeetingId()).stream().map(MeetingParticipants::getUserId).toList();
     return new MeetingsResponse(meeting.getMeetingId(), meeting.getTitle(), meeting.getDescription(), meeting.getStartDateTime(), meeting.getEndDateTime(), meeting.isDone(), participantIds);
 }
+
+@Transactional 
+public MessageResponse deleteMeeting(Long meetingId, String email){
+    User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+    Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new IllegalStateException("Meeting not found"));
+    ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(meeting.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+
+    boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+    if(!isProjectLeader){
+        throw new IllegalStateException("Only a project leader can delete a meeting");
+    }
+    meetingParticipantsRepository.deleteAllByMeetingId(meetingId);
+    meetingRepository.deleteById(meetingId);
+    return new MessageResponse("meeting deleted");
+    }
 }
