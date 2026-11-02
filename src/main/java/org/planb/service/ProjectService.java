@@ -6,6 +6,7 @@ import org.planb.dto.CreateLongToDoRequest;
 import org.planb.dto.CreateProjectRequest;
 import org.planb.dto.CreateSubtaskRequest;
 import org.planb.dto.LongToDosResponse;
+import org.planb.dto.MessageResponse;
 import org.planb.dto.ProjectDetailsResponse;
 import org.planb.dto.ProjectMemberResponse;
 import org.planb.dto.ProjectsViewResponse;
@@ -527,5 +528,36 @@ public class ProjectService {
                             .orElse(null));
         }
         return "subtask assigned";
+    }
+
+    @Transactional
+    public MessageResponse deleteSubtask(Long longToDoId, Long subtaskId, String email){
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        LongToDo longToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Long todo not found"));
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+
+        boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+        if(!isProjectLeader){
+            throw new IllegalStateException("Only a project leader can delete a subtask");
+        }
+        subtaskRepository.findByIdAndLongToDoId(subtaskId, longToDoId).orElseThrow(() -> new IllegalStateException("Subtask does not belong to this long todo"));
+        subtaskRepository.deleteById(subtaskId);
+        return new MessageResponse("subtask deleted");
+    }
+
+    @Transactional 
+    public MessageResponse deleteLongToDo(Long longToDoId, String email){
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        LongToDo longToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Long todo not found"));
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+
+        boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+        if(!isProjectLeader){
+            throw new IllegalStateException("Only a project leader can delete a long todo");
+        }
+        subtaskRepository.deleteAllByLongToDoId(longToDoId);
+        toDoParticipantsRepository.deleteAllByLongTodoId(longToDoId);
+        longToDoRepository.deleteById(longToDoId);
+        return new MessageResponse("long todo deleted");
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -86,5 +87,19 @@ public class LongToDoController {
         } catch (IllegalStateException exception) {
             return ResponseEntity.status(409).body(new MessageResponse(exception.getMessage()));
         }
+    }
+
+    @DeleteMapping ("/{longToDoId}")
+    public ResponseEntity<MessageResponse> deleteLongToDo(@PathVariable Long longToDoId, Authentication authentication) {
+        String email = authentication.getName();
+        MessageResponse response = projectService.deleteLongToDo(longToDoId, email);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping ("/{longToDoId}/subtasks/{subtaskId}")
+    public ResponseEntity<MessageResponse> deleteSubtask(@PathVariable Long longToDoId, @PathVariable Long subtaskId, Authentication authentication) {
+        String email = authentication.getName();
+        MessageResponse response = projectService.deleteSubtask(longToDoId, subtaskId, email);
+        return ResponseEntity.ok(response);
     }
 }
