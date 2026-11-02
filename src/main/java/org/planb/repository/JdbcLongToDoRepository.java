@@ -4,6 +4,7 @@ import org.planb.model.LongToDo;
 import org.planb.model.LongToDoSortField;
 import org.planb.model.SortDirection;
 import org.planb.model.TaskPriority;
+import org.planb.model.CalendarLongToDoEntry;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -29,6 +30,16 @@ public class JdbcLongToDoRepository implements LongToDoRepository{
             rs.getTimestamp("starts_at").toLocalDateTime(),
             rs.getTimestamp("ends_at").toLocalDateTime(),
             TaskPriority.valueOf(rs.getString("priority")),
+            rs.getBoolean("is_completed")
+        );
+
+    private static final RowMapper<CalendarLongToDoEntry> CALENDAR_LONG_TODO_MAPPER =
+        (rs, rowNum) -> new CalendarLongToDoEntry(
+            rs.getLong("todo_id"),
+            rs.getString("title"),
+            rs.getString("project_name"),
+            rs.getTimestamp("starts_at").toLocalDateTime(), //KI Log 69
+            rs.getTimestamp("ends_at").toLocalDateTime(),
             rs.getBoolean("is_completed")
         );
     
@@ -226,4 +237,28 @@ public class JdbcLongToDoRepository implements LongToDoRepository{
                 : "ASC";
     }
 
+@Override
+    public List<CalendarLongToDoEntry> findAllByParticipantInPeriod(Long userId, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        if (userId == null || periodStart == null || periodEnd == null) {
+            return Collections.emptyList();
+        }
+//KI log 69
+        String sql = """
+            SELECT lt.todo_id, lt.title, p.name AS project_name, lt.starts_at, lt.ends_at, lt.is_completed
+            FROM long_todos lt
+            JOIN todo_participants tp ON lt.todo_id = tp.todo_id
+            JOIN projects p ON lt.project_id = p.project_id
+            WHERE tp.user_id = ?
+            AND lt.ends_at > ? AND lt.starts_at < ?
+            ORDER BY lt.starts_at
+            """;
+
+        return jdbcTemplate.query(
+                sql,
+                CALENDAR_LONG_TODO_MAPPER,
+                userId,
+                Timestamp.valueOf(periodStart),
+                Timestamp.valueOf(periodEnd) //KI Log 69
+        );
+    }
 }
