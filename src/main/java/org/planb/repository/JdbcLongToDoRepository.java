@@ -201,6 +201,14 @@ public class JdbcLongToDoRepository implements LongToDoRepository{
         jdbcTemplate.update(sql, toDoId);
     }
 
+    @Override 
+    public void deleteByProjectId(Long projectId){
+     if (projectId == null) {
+            return;
+        }
+        jdbcTemplate.update("DELETE FROM long_todos WHERE project_id = ?", projectId);
+    }
+
     private String orderBy(LongToDoSortField sortField){
         if(sortField == null){
             return "todo_id";

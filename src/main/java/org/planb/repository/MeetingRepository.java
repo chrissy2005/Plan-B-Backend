@@ -17,4 +17,6 @@ boolean existsById(Long meetingId);
 
 void deleteById(Long meetingId);
 
+void deleteByProjectId(Long projectId);
+
 }

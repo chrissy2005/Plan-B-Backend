@@ -139,6 +139,11 @@ public void deleteById(Long meetingId){
         jdbcTemplate.update("DELETE FROM meetings WHERE meeting_id = ?", meetingId);
     }
 
-
+public void deleteByProjectId(Long projectId){
+     if (projectId == null) {
+            return;
+        }
+        jdbcTemplate.update("DELETE FROM meetings WHERE project_id = ?", projectId);
+    }
 
 }

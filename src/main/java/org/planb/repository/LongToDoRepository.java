@@ -29,6 +29,8 @@ boolean existsById(Long longToDoId);
 void deleteById(Long longTodoId);
 //delete longToDo
 
+void deleteByProjectId(Long projectId);
+
 
 }
 
