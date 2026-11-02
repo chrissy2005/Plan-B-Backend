@@ -2,6 +2,8 @@ package org.planb.service;
 
 import org.planb.model.CalendarMeetingEntry;
 import org.planb.model.CalendarLongToDoEntry;
+import org.planb.model.User; //KI Log 78
+import org.planb.repository.UserRepository; //KI Log 78
 import org.planb.repository.LongToDoRepository;
 import org.planb.repository.MeetingRepository;
 import org.planb.dto.CalendarLongToDoResponse;
@@ -28,14 +30,20 @@ public class CalendarService {
     private static final ZoneId BERLIN = ZoneId.of("Europe/Berlin"); //KI Log 70
     private static final DateTimeFormatter MEETING_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"); //KI Log 73
     private static final DateTimeFormatter TODO_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final UserRepository userRepository; //KI Log 78
     
-    public CalendarService(MeetingRepository meetingRepository, LongToDoRepository longToDoRepository) {
+    public CalendarService(MeetingRepository meetingRepository, LongToDoRepository longToDoRepository, UserRepository userRepository) {
         this.meetingRepository = meetingRepository;
         this.longToDoRepository = longToDoRepository;
+        this.userRepository = userRepository;
         
     }
     
-    public CalendarResponse getCalendarWeek (Long userId, LocalDate week) {
+    public CalendarResponse getCalendarWeek (String email, LocalDate week) {
+    //KI Log 78
+    User user = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("Authenticated user could not be found"));
+    Long userId = user.getId();
+
     if (week == null) {
         week = LocalDate.now(BERLIN); //KI Log 70
     }
