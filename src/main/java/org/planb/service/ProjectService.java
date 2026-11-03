@@ -15,6 +15,7 @@ import org.planb.dto.UpdateSubtaskDoneRequest;
 import org.planb.dto.CreateLongToDoResponse;
 import org.planb.dto.ClaimSubtaskRequest;
 import org.planb.dto.AssignSubtaskRequest;
+import org.planb.dto.UpdateProjectMemberRoleRequest;
 import org.planb.model.LongToDo;
 import org.planb.model.Project;
 import org.planb.model.ProjectMembership;
@@ -670,4 +671,32 @@ public class ProjectService {
         return new MessageResponse("Project deleted");
     }
     
+    public MessageResponse updateProjectMemberRole(Long projectId, Long userId, UpdateProjectMemberRoleRequest request, String requesterEmail) {
+        Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
+        User requester = userRepository.findByEmail(requesterEmail).orElseThrow(() -> new IllegalStateException("Requester not found"));
+        ProjectMembership requesterMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, requester.getId()).orElseThrow(() -> new IllegalStateException("Requester is not a project member"));
+
+        if (requesterMembership.getRole() != ProjectRole.PROJECT_LEADER) {
+            throw new IllegalStateException("Only a project leader can update member roles");
+        }
+
+        ProjectMembership targetMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(() -> new IllegalStateException("Target user is not a project member"));
+
+        if (targetMembership.getRole() == ProjectRole.PROJECT_LEADER && !requester.getId().equals(userId)) {
+            throw new IllegalStateException("Cannot change the role of another project leader");
+        }
+
+        if(targetMembership.getRole() == ProjectRole.PROJECT_LEADER && request.role() != ProjectRole.PROJECT_LEADER && !requester.getId().equals(userId)) {
+            List<ProjectMembership> projectLeaders = projectMembershipRepository.findByProjectIdAndRole(projectId, ProjectRole.PROJECT_LEADER);
+            boolean anotherProjectLeaderExists = projectLeaders.stream().anyMatch(membership -> !membership.getUserId().equals(requester.getId()));
+            if (!anotherProjectLeaderExists) {
+                throw new IllegalStateException("project needs at least one project leader.");
+            }
+        }
+
+        targetMembership.setRole(request.role());
+        projectMembershipRepository.save(targetMembership);
+
+        return new MessageResponse("role updated");
+    }
 }

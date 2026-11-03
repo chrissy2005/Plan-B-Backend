@@ -13,6 +13,7 @@ import org.planb.dto.ProjectDetailsResponse;
 import org.planb.dto.ProjectMemberResponse;
 import org.planb.dto.ProjectsViewResponse;
 import org.planb.dto.CreateMeetingResponse;
+import org.planb.dto.UpdateProjectMemberRoleRequest;
 import org.planb.service.ProjectService;
 import org.planb.service.MeetingService;
 import jakarta.validation.Valid;
@@ -30,6 +31,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
 //import java.util.Map;
+import org.springframework.web.bind.annotation.PutMapping;
+
 
 //import io.jsonwebtoken.security.Message;
 
@@ -175,6 +178,13 @@ public class ProjectController {
     public ResponseEntity<MessageResponse> deleteProject(@PathVariable Long projectId, Authentication authentication) {
         String email = authentication.getName();
         MessageResponse response = projectService.deleteProject(projectId, email);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("{projectId}/members/{userId}")
+    public ResponseEntity<MessageResponse> updateProjectMemberRole(@PathVariable Long projectId, @PathVariable Long userId, @RequestBody @Valid UpdateProjectMemberRoleRequest request, Authentication authentication) {
+        String email = authentication.getName();
+        MessageResponse response = projectService.updateProjectMemberRole(projectId, userId, request, email);
         return ResponseEntity.ok(response);
     }
 
