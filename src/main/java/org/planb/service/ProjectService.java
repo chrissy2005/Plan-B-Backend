@@ -671,6 +671,7 @@ public class ProjectService {
         return new MessageResponse("Project deleted");
     }
     
+    @Transactional 
     public MessageResponse updateProjectMemberRole(Long projectId, Long userId, UpdateProjectMemberRoleRequest request, String requesterEmail) {
         Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
         User requester = userRepository.findByEmail(requesterEmail).orElseThrow(() -> new IllegalStateException("Requester not found"));
