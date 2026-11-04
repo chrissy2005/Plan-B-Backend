@@ -5,6 +5,7 @@ import org.planb.dto.ClaimSubtaskRequest;
 import org.planb.dto.AssignSubtaskRequest;
 import org.planb.dto.MessageResponse;
 import org.planb.dto.UpdateLongToDoDone;
+import org.planb.dto.UpdateLongToDoRequest;
 import org.planb.dto.UpdateSubtaskDoneRequest;
 import org.planb.service.ProjectService;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -102,4 +103,14 @@ public class LongToDoController {
         MessageResponse response = projectService.deleteSubtask(longToDoId, subtaskId, email);
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/{longToDoId}")
+    public ResponseEntity<MessageResponse> updateLongToDo(@PathVariable Long longToDoId, @RequestBody @Valid UpdateLongToDoRequest request, Authentication authentication) {
+        String email = authentication.getName();
+        MessageResponse response = projectService.updateLongToDo(longToDoId, request, email);
+        
+        return ResponseEntity.ok(response);
+    }
+
+
 }

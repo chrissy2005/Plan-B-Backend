@@ -181,7 +181,7 @@ public class ProjectController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("{projectId}/members/{userId}")
+    @PutMapping("/{projectId}/members/{userId}")
     public ResponseEntity<MessageResponse> updateProjectMemberRole(@PathVariable Long projectId, @PathVariable Long userId, @RequestBody @Valid UpdateProjectMemberRoleRequest request, Authentication authentication) {
         String email = authentication.getName();
         MessageResponse response = projectService.updateProjectMemberRole(projectId, userId, request, email);

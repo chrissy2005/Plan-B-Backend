@@ -11,11 +11,13 @@ import org.planb.dto.ProjectDetailsResponse;
 import org.planb.dto.ProjectMemberResponse;
 import org.planb.dto.ProjectsViewResponse;
 import org.planb.dto.SubtaskResponse;
+import org.planb.dto.UpdateLongToDoRequest;
 import org.planb.dto.UpdateSubtaskDoneRequest;
 import org.planb.dto.CreateLongToDoResponse;
 import org.planb.dto.ClaimSubtaskRequest;
 import org.planb.dto.AssignSubtaskRequest;
 import org.planb.dto.UpdateProjectMemberRoleRequest;
+import org.planb.dto.UpdateSubtaskRequest;
 import org.planb.model.LongToDo;
 import org.planb.model.Project;
 import org.planb.model.ProjectMembership;
@@ -38,7 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.util.HashMap;
+//import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 //import java.util.function.Function;
@@ -699,5 +701,83 @@ public class ProjectService {
         projectMembershipRepository.save(targetMembership);
 
         return new MessageResponse("role updated");
+    }
+
+    @Transactional 
+    public MessageResponse updateLongToDo(Long longToDoId, UpdateLongToDoRequest request, String email){
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        LongToDo longToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Long todo not found"));
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+        boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+        if(!isProjectLeader){
+            throw new IllegalStateException("Only a project leader can update a long todo");
+        }
+        if(!request.getStartDateTime().isBefore(request.getEndDateTime())){
+            throw new IllegalArgumentException("Start date and time must be before end date time");
+        }
+        List<Long> assignedMemberIds = request.getAssignedMemberIds().stream().distinct().toList();
+        for(Long userId : assignedMemberIds){
+            boolean isMember = projectMembershipRepository.existsByProjectIdAndUserId(longToDoId, userId);
+            if(!isMember){
+                throw new IllegalArgumentException("User is not a project member:" + userId);
+            }
+        }
+        List<Subtask> existingSubtasks = subtaskRepository.findByLongToDoId(longToDoId);
+        Map<Long, Subtask> existingSubtasksbyId = existingSubtasks.stream().collect(Collectors.toMap(Subtask::getSubtaskId, subtask -> subtask));
+        List<UpdateSubtaskRequest> requestedSubtasks = request.getSubtasks();
+        Set<Long> requestedExistingSubtaskIds = new HashSet<>();
+        for(UpdateSubtaskRequest request2 : requestedSubtasks){
+            Long subtaskId = request2.getSubtaskId();
+            if(subtaskId == null){
+                continue;
+            }
+            if(!existingSubtasksbyId.containsKey(subtaskId)){
+                throw new IllegalArgumentException("Subtask does not belong to this long todo: " + subtaskId);
+            }
+            if(!requestedExistingSubtaskIds.add(subtaskId)){
+                throw new IllegalArgumentException("SubtaskId was submitted more than once: " + subtaskId);
+            }
+        }
+
+        longToDo.setTitle(request.getTitle());
+        longToDo.setDescription(request.getDescription());
+        longToDo.setStartTime(request.getStartDateTime());
+        longToDo.setEndTime(request.getEndDateTime());
+        longToDo.setPriority(request.getPriority());
+        longToDoRepository.save(longToDo);
+
+        toDoParticipantsRepository.deleteAllByLongTodoId(longToDoId);
+        for(Long userId : assignedMemberIds){
+            ToDoParticipants participant = new ToDoParticipants();
+            participant.setToDoId(longToDoId);
+            participant.setUserId(userId);
+            toDoParticipantsRepository.save(participant);
+        }
+
+        for(Subtask existingSubtask : existingSubtasks){
+            Long existingSubtaskId = existingSubtask.getSubtaskId();
+            if(!requestedExistingSubtaskIds.contains(existingSubtaskId)){
+                subtaskRepository.deleteById(existingSubtaskId);
+            }
+        }
+
+        for(UpdateSubtaskRequest subtaskRequest : request.getSubtasks()){
+            Subtask subtask;
+            if(subtaskRequest.getSubtaskId() == null){
+                subtask = new Subtask();
+                subtask.setLongToDoId(longToDoId);
+                subtask.setDone(false);
+                subtask.setAssigneeId(null);
+            }
+            else{
+                subtask = existingSubtasksbyId.get(subtaskRequest.getSubtaskId());
+            }
+            subtask.setTitle(subtaskRequest.getTitle());
+            subtask.setDescription(subtaskRequest.getDescription());
+            subtask.setPriority(subtaskRequest.getPriority());
+            subtaskRepository.save(subtask);
+        }
+
+        return new MessageResponse("long todo updated");
     }
 }
