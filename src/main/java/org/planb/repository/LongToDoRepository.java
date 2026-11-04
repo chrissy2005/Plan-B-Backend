@@ -31,6 +31,8 @@ void deleteById(Long longTodoId);
 //delete longToDo
 
 List<CalendarLongToDoEntry> findAllByParticipantInPeriod(Long userId, LocalDateTime periodStart, LocalDateTime periodEnd);
+void deleteByProjectId(Long projectId);
 
+List<LongToDo> searchForDashboard(Long longToDoId,TaskPriority priority, Boolean done, LocalDateTime from, LocalDateTime to);
 }
 

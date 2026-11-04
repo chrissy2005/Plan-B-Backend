@@ -10,6 +10,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.sql.Timestamp;
 
 @Repository
 public class JdbcMeetingRepository implements MeetingRepository {
@@ -152,6 +155,12 @@ public void deleteById(Long meetingId){
         jdbcTemplate.update("DELETE FROM meetings WHERE meeting_id = ?", meetingId);
     }
 
+public void deleteByProjectId(Long projectId){
+     if (projectId == null) {
+            return;
+        }
+        jdbcTemplate.update("DELETE FROM meetings WHERE project_id = ?", projectId);
+    }
 
 @Override 
 public List<CalendarMeetingEntry> findAllByParticipantInPeriod(Long userId, OffsetDateTime periodStart, OffsetDateTime periodEnd){ //KI Log 68
@@ -175,4 +184,33 @@ public List<CalendarMeetingEntry> findAllByParticipantInPeriod(Long userId, Offs
 
     return meetings;
 }
+public List<Meeting> searchForDashboard(Long meetingId, Boolean done, LocalDateTime from, LocalDateTime to) {
+    if(meetingId == null){
+        return Collections.emptyList();
+    }    
+    StringBuilder sql = new StringBuilder("""
+            SELECT %s
+            FROM meetings
+            WHERE meeting_id = ?
+            """.formatted(COLUMNS));
+        
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(meetingId);
+
+        if (done != null) {
+            sql.append(" AND is_completed = ?");
+            parameters.add(done);
+        }
+        if (from != null) {
+            sql.append(" AND starts_at >= ?");
+            parameters.add(Timestamp.valueOf(from));
+        }
+        if (to != null) {
+            sql.append(" AND ends_at <= ?");
+            parameters.add(Timestamp.valueOf(to));
+        }
+
+        sql.append(" ORDER BY starts_at ASC");
+        return jdbcTemplate.query(sql.toString(), MEETINGS_MAPPER, parameters.toArray());
+    }
 }

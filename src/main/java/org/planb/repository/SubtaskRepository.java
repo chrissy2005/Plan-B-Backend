@@ -2,7 +2,7 @@ package org.planb.repository;
 
 import java.util.List;
 import java.util.Optional;
-
+import java.time.LocalDateTime;
 import org.planb.model.Subtask;
 import org.planb.model.SortDirection;
 import org.planb.model.SubtaskSortField;
@@ -43,4 +43,5 @@ void deleteAllByLongToDoId(Long longToDoId);
 
 List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetDateTime periodStart, OffsetDateTime periodEnd);
 
+List<Subtask> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, LocalDateTime from, LocalDateTime to);
 }

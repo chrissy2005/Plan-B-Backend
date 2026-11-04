@@ -1,5 +1,6 @@
 package org.planb.service;
 
+
 import org.planb.model.Meeting;
 import org.planb.model.MeetingParticipants;
 import org.planb.model.Project;
@@ -13,6 +14,8 @@ import org.planb.repository.MeetingParticipantsRepository;
 import org.planb.dto.CreateMeetingRequest;
 import org.planb.dto.CreateMeetingResponse;
 import org.planb.dto.MeetingsResponse;
+import org.planb.dto.MessageResponse;
+import org.planb.dto.UpdateMeetingDoneRequest;
 import org.planb.repository.ProjectMembershipRepository;
 
 import org.springframework.stereotype.Service;
@@ -114,4 +117,109 @@ private MeetingsResponse toMeetingsResponse(Meeting meeting){
     List<Long> participantIds = meetingParticipantsRepository.findAllByMeetingId(meeting.getMeetingId()).stream().map(MeetingParticipants::getUserId).toList();
     return new MeetingsResponse(meeting.getMeetingId(), meeting.getTitle(), meeting.getDescription(), meeting.getStartDateTime(), meeting.getEndDateTime(), meeting.isDone(), participantIds);
 }
+
+@Transactional 
+public MessageResponse deleteMeeting(Long meetingId, String email){
+    User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+    Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new IllegalStateException("Meeting not found"));
+    ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(meeting.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+
+    boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+    if(!isProjectLeader){
+        throw new IllegalStateException("Only a project leader can delete a meeting");
+    }
+    meetingParticipantsRepository.deleteAllByMeetingId(meetingId);
+    meetingRepository.deleteById(meetingId);
+    return new MessageResponse("meeting deleted");
+    }
+
+@Transactional 
+public MessageResponse updateMeetingDone(Long meetingId, UpdateMeetingDoneRequest request, String email){
+    if(request == null || request.getUpdate().getNewValue() == null){
+        throw new IllegalArgumentException("Update 'data' is required");
+    }
+    UpdateMeetingDoneRequest.UpdateField update = request.getUpdate();
+    if(!"done".equalsIgnoreCase(update.getAttribute())){
+        throw new IllegalArgumentException("Only 'done' attribute can be updated");
+    }
+    if(update.getNewValue() == null){
+        throw new IllegalArgumentException("Field 'done' is required");
+    }
+    User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+    Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new IllegalStateException("Meeting not found"));
+    ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(meeting.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+
+    boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+    if(!isProjectLeader){
+        throw new IllegalStateException("Only a project leader can update the done status of a meeting");
+    }
+
+    meeting.setDone(update.getNewValue());
+    meetingRepository.save(meeting);
+    return new MessageResponse("meeting status updated");
 }
+
+@Transactional 
+public MessageResponse updateMeeting(Long meetingId, CreateMeetingRequest request, String email){
+    User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+    Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new IllegalStateException("Meeting not found"));
+    ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(meeting.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+    Long projectId = meeting.getProjectId();
+    boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+    if(!isProjectLeader){
+        throw new IllegalStateException("Only a project leader can update a meeting");
+    }
+    List<Long> participantIds = request.getParticipantIds().stream().distinct().toList();
+    for (Long participantId : participantIds){
+        boolean isProjectMember = projectMembershipRepository.existsByProjectIdAndUserId(projectId, participantId);
+        if(!isProjectMember){
+            throw new IllegalArgumentException("User is not a member of this project: " + participantId);
+        }
+    }
+    meeting.setTitle(request.getTitle());
+    meeting.setDescription(request.getDescription());
+    meeting.setStartDateTime(request.getStartDateTime());
+    meeting.setEndDateTime(request.getEndDateTime());
+    meetingRepository.save(meeting);
+
+    meetingParticipantsRepository.deleteAllByMeetingId(meetingId);
+    for(Long participantId : participantIds){
+        MeetingParticipants participant = new MeetingParticipants();
+        participant.setMeetingId(meetingId);
+        participant.setUserId(participantId);
+        meetingParticipantsRepository.save(participant);
+    }
+
+    return new MessageResponse("Meeting updated");
+}
+
+}
+
+/*
+        if(done == null ){
+            throw new IllegalArgumentException("Field 'done' is required");
+        }
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        LongToDo longToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Long todo not found"));
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+        List<Subtask> subtasks = subtaskRepository.findByLongToDoId(longToDoId);
+        boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+        boolean hasOpenSubtasks = subtasks.stream().anyMatch(subtask -> !subtask.isDone());
+        if(!done && !isProjectLeader){
+            throw new IllegalStateException("Only a project leader can reopen a long todo");
+        }
+        if(done && !isProjectLeader && hasOpenSubtasks){
+            throw new IllegalStateException("Only a project leader can directly mark a long-todo as done while subtasks are still open.");
+        }
+        if(isProjectLeader){
+            for (Subtask subtask : subtasks){
+                if(subtask.isDone() != done){
+                    subtask.setDone(done);
+                    subtaskRepository.save(subtask);
+                }
+            }
+        }
+        longToDo.setDone(done);
+        longToDoRepository.save(longToDo);
+        LongToDo updatedLongToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Updated long-todo not found"));
+        return toLongToDosResponse(updatedLongToDo); */

@@ -212,6 +212,14 @@ public class JdbcLongToDoRepository implements LongToDoRepository{
         jdbcTemplate.update(sql, toDoId);
     }
 
+    @Override 
+    public void deleteByProjectId(Long projectId){
+     if (projectId == null) {
+            return;
+        }
+        jdbcTemplate.update("DELETE FROM long_todos WHERE project_id = ?", projectId);
+    }
+
     private String orderBy(LongToDoSortField sortField){
         if(sortField == null){
             return "todo_id";
@@ -260,5 +268,39 @@ public class JdbcLongToDoRepository implements LongToDoRepository{
                 Timestamp.valueOf(periodStart),
                 Timestamp.valueOf(periodEnd) //KI Log 69
         );
+    }
+    @Override 
+    public List<LongToDo> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, LocalDateTime from, LocalDateTime to) {
+        if(longToDoId == null){
+            return Collections.emptyList();
+        }
+        StringBuilder sql = new StringBuilder("""
+            SELECT %s
+            FROM long_todos
+            WHERE todo_id = ?
+            """.formatted(COLUMNS));
+        
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(longToDoId);
+
+        if(priority != null){
+            sql.append(" AND priority = ? ");
+            parameters.add(priority.name());
+        }
+        if(done != null){
+            sql.append(" AND is_completed = ? ");
+            parameters.add(done);
+        }
+        if(from != null){
+            sql.append(" AND starts_at >= ? ");
+            parameters.add(Timestamp.valueOf(from));
+        }
+        if(to != null){
+            sql.append(" AND ends_at <= ? ");
+            parameters.add(Timestamp.valueOf(to));
+        }
+
+        sql.append(" Order BY starts_at ASC");
+        return jdbcTemplate.query(sql.toString(), LONG_TODO_MAPPER, parameters.toArray());
     }
 }
