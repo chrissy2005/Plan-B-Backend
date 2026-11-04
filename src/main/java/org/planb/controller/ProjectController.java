@@ -14,6 +14,7 @@ import org.planb.dto.ProjectMemberResponse;
 import org.planb.dto.ProjectsViewResponse;
 import org.planb.dto.CreateMeetingResponse;
 import org.planb.dto.UpdateProjectMemberRoleRequest;
+import org.planb.dto.UpdateProjectRequest;
 import org.planb.service.ProjectService;
 import org.planb.service.MeetingService;
 import jakarta.validation.Valid;
@@ -186,6 +187,13 @@ public class ProjectController {
         String email = authentication.getName();
         MessageResponse response = projectService.updateProjectMemberRole(projectId, userId, request, email);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{projectId}")
+    public ResponseEntity<MessageResponse> updateProject(@PathVariable Long projectId, @RequestBody @Valid UpdateProjectRequest request, Authentication authentication) {
+        String email = authentication.getName();
+        MessageResponse response = projectService.updateProject(projectId, request, email);
+        return ResponseEntity.ok(response);  
     }
 
 }

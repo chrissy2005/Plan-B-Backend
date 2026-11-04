@@ -17,6 +17,7 @@ import org.planb.dto.CreateLongToDoResponse;
 import org.planb.dto.ClaimSubtaskRequest;
 import org.planb.dto.AssignSubtaskRequest;
 import org.planb.dto.UpdateProjectMemberRoleRequest;
+import org.planb.dto.UpdateProjectRequest;
 import org.planb.dto.UpdateSubtaskRequest;
 import org.planb.model.LongToDo;
 import org.planb.model.Project;
@@ -637,6 +638,7 @@ public class ProjectService {
         }
     }
 
+    @Transactional 
     public MessageResponse deleteProject(Long projectId, String email){
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
         projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
@@ -779,5 +781,21 @@ public class ProjectService {
         }
 
         return new MessageResponse("long todo updated");
+    }
+
+    @Transactional 
+    public MessageResponse updateProject(Long projectId, UpdateProjectRequest request, String email){
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+        boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+        if(!isProjectLeader){
+            throw new IllegalStateException("Only a project leader can update a project");
+        }
+        project.setName(request.getName());
+        project.setDescription(request.getDescription());
+        project.setProjectStatus(request.getStatus());
+        projectRepository.save(project);
+        return new MessageResponse("Project updated");
     }
 }
