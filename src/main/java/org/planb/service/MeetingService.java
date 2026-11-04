@@ -1,6 +1,6 @@
 package org.planb.service;
 
-import org.planb.model.LongToDo;
+
 import org.planb.model.Meeting;
 import org.planb.model.MeetingParticipants;
 import org.planb.model.Project;
@@ -158,6 +158,41 @@ public MessageResponse updateMeetingDone(Long meetingId, UpdateMeetingDoneReques
     meetingRepository.save(meeting);
     return new MessageResponse("meeting status updated");
 }
+
+@Transactional 
+public MessageResponse updateMeeting(Long meetingId, CreateMeetingRequest request, String email){
+    User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+    Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new IllegalStateException("Meeting not found"));
+    ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(meeting.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+    Long projectId = meeting.getProjectId();
+    boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
+    if(!isProjectLeader){
+        throw new IllegalStateException("Only a project leader can update a meeting");
+    }
+    List<Long> participantIds = request.getParticipantIds().stream().distinct().toList();
+    for (Long participantId : participantIds){
+        boolean isProjectMember = projectMembershipRepository.existsByProjectIdAndUserId(projectId, participantId);
+        if(!isProjectMember){
+            throw new IllegalArgumentException("User is not a member of this project: " + participantId);
+        }
+    }
+    meeting.setTitle(request.getTitle());
+    meeting.setDescription(request.getDescription());
+    meeting.setStartDateTime(request.getStartDateTime());
+    meeting.setEndDateTime(request.getEndDateTime());
+    meetingRepository.save(meeting);
+
+    meetingParticipantsRepository.deleteAllByMeetingId(meetingId);
+    for(Long participantId : participantIds){
+        MeetingParticipants participant = new MeetingParticipants();
+        participant.setMeetingId(meetingId);
+        participant.setUserId(participantId);
+        meetingParticipantsRepository.save(participant);
+    }
+
+    return new MessageResponse("Meeting updated");
+}
+
 }
 
 /*
