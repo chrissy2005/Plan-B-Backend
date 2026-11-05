@@ -4,7 +4,7 @@ import java.util.List;
 
 public record AvailabilityResponse(
     boolean available,
-    List<UnavailableMemberResponse> unvailableMembers
+    List<UnavailableMemberResponse> unavailableMembers
 ) 
 {
 }
