@@ -113,7 +113,7 @@ public class LongToDoController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{longToDoId/subtasks/{subtaskId}/schedule")
+    @PutMapping("/{longToDoId}/subtasks/{subtaskId}/schedule")
     public ResponseEntity<MessageResponse> updateSubtaskTime(@PathVariable Long longToDoId, @PathVariable Long subtaskId, @RequestBody @Valid UpdateSubtaskTimeRequest request, Authentication authentication) {
         String email = authentication.getName();
         MessageResponse response = projectService.updateSubtaskTime(longToDoId, subtaskId, request, email);
