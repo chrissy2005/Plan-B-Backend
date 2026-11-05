@@ -1,6 +1,8 @@
 package org.planb.service;
 
 
+import org.planb.model.CalendarMeetingEntry;
+import org.planb.model.CalendarSubtaskEntry;
 import org.planb.model.Meeting;
 import org.planb.model.MeetingParticipants;
 import org.planb.model.Project;
@@ -8,13 +10,17 @@ import org.planb.model.User;
 import org.planb.model.ProjectRole;
 import org.planb.model.ProjectMembership;
 import org.planb.repository.ProjectRepository;
+import org.planb.repository.SubtaskRepository;
 import org.planb.repository.UserRepository;
 import org.planb.repository.MeetingRepository;
 import org.planb.repository.MeetingParticipantsRepository;
+import org.planb.dto.AvailabilityRequest;
+import org.planb.dto.AvailabilityResponse;
 import org.planb.dto.CreateMeetingRequest;
 import org.planb.dto.CreateMeetingResponse;
 import org.planb.dto.MeetingsResponse;
 import org.planb.dto.MessageResponse;
+import org.planb.dto.UnavailableMemberResponse;
 import org.planb.dto.UpdateMeetingDoneRequest;
 import org.planb.repository.ProjectMembershipRepository;
 
@@ -23,7 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet; 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet; 
 
 
 @Service
@@ -34,13 +44,15 @@ public class MeetingService{
     private final ProjectMembershipRepository projectMembershipRepository;
     private final UserRepository userRepository;
     private final MeetingParticipantsRepository meetingParticipantsRepository; 
+    private final SubtaskRepository subtaskRepository;
 
-    public MeetingService (MeetingRepository meetingRepository, ProjectRepository projectRepository, ProjectMembershipRepository projectMembershipRepository, UserRepository userRepository, MeetingParticipantsRepository meetingParticipantsRepository){
+    public MeetingService (MeetingRepository meetingRepository, ProjectRepository projectRepository, ProjectMembershipRepository projectMembershipRepository, UserRepository userRepository, MeetingParticipantsRepository meetingParticipantsRepository, SubtaskRepository subtaskRepository){
         this.meetingRepository = meetingRepository;
         this.projectRepository = projectRepository;
         this.projectMembershipRepository = projectMembershipRepository;
         this.userRepository = userRepository;
         this.meetingParticipantsRepository = meetingParticipantsRepository;
+        this.subtaskRepository = subtaskRepository;
     }
 
 @Transactional
@@ -193,33 +205,37 @@ public MessageResponse updateMeeting(Long meetingId, CreateMeetingRequest reques
     return new MessageResponse("Meeting updated");
 }
 
+@Transactional 
+public AvailabilityResponse checkAvailability(Long projectId, AvailabilityRequest request, String email){
+    OffsetDateTime start = request.start();
+    OffsetDateTime end = request.end();
+
+    if(!start.isBefore(end)){
+        throw new IllegalArgumentException("Start must be before end");
+    }
+
+    projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
+    User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+    projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+
+    Set<Long> uniqueUserIds = new LinkedHashSet<>(request.userIds());
+    List<UnavailableMemberResponse> unavailableMembers = new ArrayList<>();
+
+    for(Long userId : uniqueUserIds){
+        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalStateException("User not found"));
+        projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("User: " + userId + " is not a project member"));
+
+        List<CalendarMeetingEntry> meetings = meetingRepository.findAllByParticipantInPeriod(userId, start, end);
+        List<CalendarSubtaskEntry> subtasks = subtaskRepository.findAllByAssigneeInPeriod(userId, start, end);
+        boolean unavailable = !meetings.isEmpty() || !subtasks.isEmpty();
+
+        if(unavailable){
+        String name = user.getFirstname() + ' ' + user.getLastname();
+        unavailableMembers.add(new UnavailableMemberResponse(user.getId(), name));
+        }
+    }
+
+    return new AvailabilityResponse(unavailableMembers.isEmpty(), unavailableMembers);
 }
 
-/*
-        if(done == null ){
-            throw new IllegalArgumentException("Field 'done' is required");
-        }
-        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
-        LongToDo longToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Long todo not found"));
-        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
-        List<Subtask> subtasks = subtaskRepository.findByLongToDoId(longToDoId);
-        boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
-        boolean hasOpenSubtasks = subtasks.stream().anyMatch(subtask -> !subtask.isDone());
-        if(!done && !isProjectLeader){
-            throw new IllegalStateException("Only a project leader can reopen a long todo");
-        }
-        if(done && !isProjectLeader && hasOpenSubtasks){
-            throw new IllegalStateException("Only a project leader can directly mark a long-todo as done while subtasks are still open.");
-        }
-        if(isProjectLeader){
-            for (Subtask subtask : subtasks){
-                if(subtask.isDone() != done){
-                    subtask.setDone(done);
-                    subtaskRepository.save(subtask);
-                }
-            }
-        }
-        longToDo.setDone(done);
-        longToDoRepository.save(longToDo);
-        LongToDo updatedLongToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Updated long-todo not found"));
-        return toLongToDosResponse(updatedLongToDo); */
+}

@@ -1,6 +1,7 @@
 package org.planb.controller;
 
 import org.planb.dto.AddProjectMemberRequest;
+import org.planb.dto.AvailabilityResponse;
 import org.planb.dto.CreateLongToDoRequest;
 import org.planb.dto.CreateLongToDoResponse;
 import org.planb.dto.CreateProjectRequest;
@@ -15,6 +16,7 @@ import org.planb.dto.ProjectsViewResponse;
 import org.planb.dto.CreateMeetingResponse;
 import org.planb.dto.UpdateProjectMemberRoleRequest;
 import org.planb.dto.UpdateProjectRequest;
+import org.planb.dto.AvailabilityRequest;
 import org.planb.service.ProjectService;
 import org.planb.service.MeetingService;
 import jakarta.validation.Valid;
@@ -195,5 +197,14 @@ public class ProjectController {
         MessageResponse response = projectService.updateProject(projectId, request, email);
         return ResponseEntity.ok(response);  
     }
+
+    @PostMapping("/{projectId}/availability")
+    public ResponseEntity<AvailabilityResponse> postMethodName(@PathVariable Long projectId, @RequestBody @Valid AvailabilityRequest request, Authentication authentication) {
+        String email = authentication.getName();
+        AvailabilityResponse response = meetingService.checkAvailability(projectId, request, email);
+        
+        return ResponseEntity.ok(response);
+    }
+    
 
 }
