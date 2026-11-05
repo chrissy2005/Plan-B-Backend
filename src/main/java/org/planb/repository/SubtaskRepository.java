@@ -8,6 +8,7 @@ import org.planb.model.SortDirection;
 import org.planb.model.SubtaskSortField;
 import org.planb.model.TaskPriority;
 import org.planb.model.CalendarSubtaskEntry;
+import org.planb.model.DashboardSubtaskEntry;
 
 import java.time.OffsetDateTime;
 
@@ -43,5 +44,7 @@ void deleteAllByLongToDoId(Long longToDoId);
 
 List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetDateTime periodStart, OffsetDateTime periodEnd);
 
-List<Subtask> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, LocalDateTime from, LocalDateTime to);
+List<DashboardSubtaskEntry> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, OffsetDateTime from, OffsetDateTime to);
+
+int updateScheduleIfAssignedTo(Long longToDoId, Long subtaskId, Long userId, OffsetDateTime startDateTime, OffsetDateTime endDateTime);
 }

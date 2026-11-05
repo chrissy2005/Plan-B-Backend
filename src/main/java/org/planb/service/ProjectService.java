@@ -19,6 +19,7 @@ import org.planb.dto.AssignSubtaskRequest;
 import org.planb.dto.UpdateProjectMemberRoleRequest;
 import org.planb.dto.UpdateProjectRequest;
 import org.planb.dto.UpdateSubtaskRequest;
+import org.planb.dto.UpdateSubtaskTimeRequest;
 import org.planb.model.LongToDo;
 import org.planb.model.Project;
 import org.planb.model.ProjectMembership;
@@ -797,5 +798,29 @@ public class ProjectService {
         project.setProjectStatus(request.getStatus());
         projectRepository.save(project);
         return new MessageResponse("Project updated");
+    }
+
+    @Transactional 
+    public MessageResponse updateSubtaskTime(Long longToDoId, Long subtaskId, UpdateSubtaskTimeRequest request, String email){
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
+        LongToDo longToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Long todo not found"));
+        ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
+        Subtask subtask = subtaskRepository.findByIdAndLongToDoId(subtaskId, longToDoId).orElseThrow(() -> new IllegalStateException("Subtask does not belong to this long todo"));
+
+        if(!currentUser.getId().equals(subtask.getAssigneeId())){
+            throw new IllegalStateException("You can only set the Time of your assigned subtasks");
+        }
+
+        if(!request.from().isBefore(request.to())){
+            throw new IllegalArgumentException("Start date must be before end date");
+        }
+
+        int updated = subtaskRepository.updateScheduleIfAssignedTo(longToDoId, subtaskId, subtaskId, request.from(), request.to());
+        if(updated != 1){
+            throw new IllegalStateException("subtask time could not be updated");
+        }
+        return new MessageResponse("subtask time updated");
+
+
     }
 }

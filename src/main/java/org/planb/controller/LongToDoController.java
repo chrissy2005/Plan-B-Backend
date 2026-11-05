@@ -7,6 +7,7 @@ import org.planb.dto.MessageResponse;
 import org.planb.dto.UpdateLongToDoDone;
 import org.planb.dto.UpdateLongToDoRequest;
 import org.planb.dto.UpdateSubtaskDoneRequest;
+import org.planb.dto.UpdateSubtaskTimeRequest;
 import org.planb.service.ProjectService;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -112,5 +113,11 @@ public class LongToDoController {
         return ResponseEntity.ok(response);
     }
 
-
+    @PutMapping("/{longToDoId/subtasks/{subtaskId}/schedule")
+    public ResponseEntity<MessageResponse> updateSubtaskTime(@PathVariable Long longToDoId, @PathVariable Long subtaskId, @RequestBody @Valid UpdateSubtaskTimeRequest request, Authentication authentication) {
+        String email = authentication.getName();
+        MessageResponse response = projectService.updateSubtaskTime(longToDoId, subtaskId, request, email);
+        
+        return ResponseEntity.ok(response);
+    }
 }

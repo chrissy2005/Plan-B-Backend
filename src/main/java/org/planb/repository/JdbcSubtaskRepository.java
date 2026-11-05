@@ -9,6 +9,7 @@ import org.planb.model.Subtask;
 import org.planb.model.SubtaskSortField;
 import org.planb.model.TaskPriority;
 import org.planb.model.CalendarSubtaskEntry;
+import org.planb.model.DashboardSubtaskEntry;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -16,7 +17,7 @@ import java.time.OffsetDateTime;
 
 import java.util.Collections;
 import java.time.LocalDateTime;
-//import java.sql.Timestamp;
+import java.sql.Timestamp;
 
 @Repository 
 public class JdbcSubtaskRepository implements SubtaskRepository{
@@ -42,7 +43,19 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
                     rs.getObject("starts_at", OffsetDateTime.class),
                     rs.getObject("ends_at", OffsetDateTime.class),
                     rs.getBoolean("is_completed")
-            ); 
+            );
+    
+    private static final RowMapper<DashboardSubtaskEntry> DASHBOARD_SUBTASK_MAPPER = (rs, rowNum) ->
+            new DashboardSubtaskEntry(
+                    rs.getString("title"),
+                    rs.getString("description"),
+                    rs.getLong("subtask_id"),
+                    rs.getLong("todo_id"),
+                    rs.getBoolean("is_completed"),
+                    rs.getObject("starts_at", OffsetDateTime.class),
+                    rs.getObject("ends_at", OffsetDateTime.class),
+                    TaskPriority.valueOf(rs.getString("priority"))
+            );
 
 
     private final JdbcTemplate jdbcTemplate;
@@ -222,7 +235,9 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
     public int releaseIfAssignedTo(Long subtaskId, Long userId) {
         return jdbcTemplate.update("""
             UPDATE subtasks
-            SET assignee_id = NULL
+            SET assignee_id = NULL,
+                starts_at = NULL,
+                ends_at = NULL
             WHERE subtask_id = ?
               AND assignee_id = ?
             """, subtaskId, userId);
@@ -299,7 +314,7 @@ public List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetD
         );
 }
     @Override 
-    public List<Subtask> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, LocalDateTime from, LocalDateTime to) {
+    public List<DashboardSubtaskEntry> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, OffsetDateTime from, OffsetDateTime to) {
         if(longToDoId == null){
             return Collections.emptyList();
         }
@@ -325,18 +340,30 @@ public List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetD
             parameters.add(assigneeId);   
         }
 
-        /* When Time attributes are added to the Subtask model, uncomment this code to filter by time range
+        // When Time attributes are added to the Subtask model, uncomment this code to filter by time range
         if(from != null){
             sql.append(" AND starts_at >= ? ");
-            parameters.add(Timestamp.valueOf(from));
+            parameters.add(from);
         }
         if(to != null){
             sql.append(" AND ends_at <= ? ");
-            parameters.add(Timestamp.valueOf(to));
+            parameters.add(to);
         }
         sql.append(" ORDER BY starts_at ASC");
-        */
         
-        return jdbcTemplate.query(sql.toString(), SUBTASK_MAPPER, parameters.toArray());
+        
+        return jdbcTemplate.query(sql.toString(), DASHBOARD_SUBTASK_MAPPER, parameters.toArray());
     }
+
+@Override 
+public int updateScheduleIfAssignedTo(Long longToDoId, Long subtaskId, Long userId, OffsetDateTime startDateTime, OffsetDateTime endDateTime){
+    return jdbcTemplate.update("""
+        UPDATE subtasks
+        SET starts_at = ?,
+            ends_at = ?
+        WHERE subtask_id = ?
+          AND todo_id = ?
+          AND assignee_id = ?
+         """, startDateTime, endDateTime, subtaskId, longToDoId, userId);
+}
 }

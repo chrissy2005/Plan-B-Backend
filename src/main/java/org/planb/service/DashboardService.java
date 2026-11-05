@@ -1,5 +1,6 @@
 package org.planb.service;
 
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.planb.repository.LongToDoRepository;
@@ -15,6 +16,7 @@ import org.planb.dto.DashboardMeetingResponse;
 import org.planb.model.User;
 import org.planb.model.TaskPriority;
 import org.planb.model.ToDoParticipants;
+import org.planb.model.DashboardSubtaskEntry;
 import org.planb.model.LongToDo;
 import org.planb.model.MeetingParticipants;
 import org.planb.model.Meeting;
@@ -22,6 +24,8 @@ import org.planb.model.Subtask;
 import org.planb.model.Project;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Collections;
 
@@ -35,6 +39,7 @@ public class DashboardService {
     private final ToDoParticipantsRepository toDoParticipantsRepository;
     private final MeetingParticipantsRepository meetingParticipantsRepository;
     private final ProjectRepository projectRepository;
+    private static final ZoneId PROJECT_ZONE = ZoneId.of("Europe/Berlin");
 
     public DashboardService(UserRepository userRepository, LongToDoRepository longToDoRepository, SubtaskRepository subtaskRepository, MeetingRepository meetingRepository, ToDoParticipantsRepository toDoParticipantsRepository, MeetingParticipantsRepository meetingParticipantsRepository, ProjectRepository projectRepository) {
         this.userRepository = userRepository;
@@ -44,6 +49,22 @@ public class DashboardService {
         this.toDoParticipantsRepository = toDoParticipantsRepository;
         this.meetingParticipantsRepository = meetingParticipantsRepository;
         this.projectRepository = projectRepository;
+    }
+
+    private OffsetDateTime toOffsetDateTime(LocalDateTime value){
+        return value == null
+                ? null
+                : value
+                    .atZone(PROJECT_ZONE)
+                    .toOffsetDateTime();
+    }
+
+    private LocalDateTime toLocalDateTime(OffsetDateTime value){
+        if(value == null){
+            return null;
+        }
+        
+        return value.atZoneSameInstant(PROJECT_ZONE).toLocalDateTime();
     }
 
     @Transactional(readOnly = true)
@@ -68,15 +89,19 @@ public class DashboardService {
         if(participants.isEmpty()){
             return Collections.emptyList();
         }
+
+        OffsetDateTime from_off = toOffsetDateTime(from);
+        OffsetDateTime to_off = toOffsetDateTime(to);
+
         return participants.stream()
             .map(ToDoParticipants::getToDoId).filter(id -> id != null).distinct()
             .flatMap(longToDoId -> {
-                List<LongToDo> longToDos = longToDoRepository.searchForDashboard(longToDoId, null, null, null, null);
+                List<LongToDo> longToDos = longToDoRepository.searchForDashboard(longToDoId, null, null, from, to);
                 if(longToDos.isEmpty()){
                     return java.util.stream.Stream.empty();
                 }
                 LongToDo longToDo = longToDos.get(0);
-                return subtaskRepository.searchForDashboard(longToDoId, priority, done, currentUser.getId(), from, to).stream()
+                return subtaskRepository.searchForDashboard(longToDoId, priority, done, currentUser.getId(), from_off, to_off).stream()
                 .map(subtask -> toDashboardSubtaskResponse(subtask, longToDo));
             })
             .toList();
@@ -111,7 +136,7 @@ public class DashboardService {
         );
     }
 
-    private DashboardSubtaskResponse toDashboardSubtaskResponse(Subtask subtask, LongToDo longToDo) {
+    private DashboardSubtaskResponse toDashboardSubtaskResponse(DashboardSubtaskEntry subtask, LongToDo longToDo) {
         String projectName = findProjectName(longToDo.getProjectId());
         return new DashboardSubtaskResponse(
             subtask.getSubtaskId(),
@@ -121,8 +146,8 @@ public class DashboardService {
             projectName,
             subtask.getTitle(),
             subtask.getDescription(),
-            longToDo.getStartTime(), //eigentlich muss hier subtask.getStartTime() stehen
-            longToDo.getEndTime(),  // eigentlich muss hier subtask.getEndTime() stehen
+            toLocalDateTime(subtask.getStart()), //eigentlich muss hier subtask.getStartTime() stehen
+            toLocalDateTime(subtask.getEnd()),  // eigentlich muss hier subtask.getEndTime() stehen
             subtask.getPriority(),
             subtask.isDone()
         );
