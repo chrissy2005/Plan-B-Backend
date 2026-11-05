@@ -1,7 +1,9 @@
 package org.planb.repository;
 
 import org.planb.model.Meeting;
+import org.planb.model.CalendarMeetingEntry;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime; //KI Log 67
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -31,6 +33,17 @@ private static final String COLUMNS =
                     rs.getBoolean("is_completed")
                     
             );
+
+    //KI Log 67
+    private static final RowMapper<CalendarMeetingEntry> CALENDAR_MEETING_MAPPER = (rs, rowNum) ->
+            new CalendarMeetingEntry(
+                    rs.getLong("meeting_id"),
+                    rs.getString("title"),
+                    rs.getString("project_name"),
+                    rs.getObject("starts_at", OffsetDateTime.class),
+                    rs.getObject("ends_at", OffsetDateTime.class),
+                    rs.getBoolean("is_completed")
+            ); 
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -150,6 +163,27 @@ public void deleteByProjectId(Long projectId){
     }
 
 @Override 
+public List<CalendarMeetingEntry> findAllByParticipantInPeriod(Long userId, OffsetDateTime periodStart, OffsetDateTime periodEnd){ //KI Log 68
+    //Ki Log 68 
+    String sql = """
+            SELECT m.meeting_id, m.title, p.name AS project_name, m.starts_at, m.ends_at, m.is_completed
+            FROM meetings m
+            JOIN meeting_participants mp ON m.meeting_id = mp.meeting_id
+            JOIN projects p ON m.project_id = p.project_id
+            WHERE mp.user_id = ?  AND m.ends_at > ? AND m.starts_at < ?
+            ORDER BY m.starts_at
+            """;
+
+    List<CalendarMeetingEntry> meetings = jdbcTemplate.query(
+            sql,
+            CALENDAR_MEETING_MAPPER,
+            userId,
+            periodStart,
+            periodEnd
+    );
+
+    return meetings;
+}
 public List<Meeting> searchForDashboard(Long meetingId, Boolean done, LocalDateTime from, LocalDateTime to) {
     if(meetingId == null){
         return Collections.emptyList();

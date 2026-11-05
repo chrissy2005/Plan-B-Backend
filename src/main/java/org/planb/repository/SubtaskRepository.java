@@ -7,6 +7,9 @@ import org.planb.model.Subtask;
 import org.planb.model.SortDirection;
 import org.planb.model.SubtaskSortField;
 import org.planb.model.TaskPriority;
+import org.planb.model.CalendarSubtaskEntry;
+
+import java.time.OffsetDateTime;
 
 public interface SubtaskRepository {
 
@@ -37,6 +40,8 @@ void deleteById(Long subtaskId);
 
 void deleteAllByLongToDoId(Long longToDoId);
 //delete all subtasks that belong to one longToDo
+
+List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetDateTime periodStart, OffsetDateTime periodEnd);
 
 List<Subtask> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, LocalDateTime from, LocalDateTime to);
 }

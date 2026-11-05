@@ -9,6 +9,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException; //KI Log 80
+import java.time.LocalDate; //KI Log 80
 
 @RestControllerAdvice 
 public class GlobalExceptionHandler {
@@ -44,5 +46,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<MessageResponse> handleIllegalStateException(IllegalStateException exception){
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new MessageResponse(exception.getMessage()));
+    }
+
+    //KI Log 80 
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<MessageResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException exception) {
+        String message = "invalid parameter: " + exception.getName();
+
+    if (exception.getRequiredType() == LocalDate.class) {
+        message += " (expected format: yyyy-MM-dd)";
+    }
+    return ResponseEntity.badRequest().body(new MessageResponse(message));
     }
 }

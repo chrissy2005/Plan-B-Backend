@@ -8,9 +8,11 @@ import org.planb.model.SortDirection;
 import org.planb.model.Subtask;
 import org.planb.model.SubtaskSortField;
 import org.planb.model.TaskPriority;
+import org.planb.model.CalendarSubtaskEntry;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import java.time.OffsetDateTime;
 
 import java.util.Collections;
 import java.time.LocalDateTime;
@@ -30,6 +32,18 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
             rs.getObject("assignee_id", Long.class), //KI Log für Werte die null sein dürfen
             TaskPriority.valueOf(rs.getString("priority"))
         );
+
+    private static final RowMapper<CalendarSubtaskEntry> CALENDAR_SUBTASK_MAPPER = (rs, rowNum) ->
+            new CalendarSubtaskEntry(
+                    rs.getLong("subtask_id"),
+                    rs.getString("title"),
+                    rs.getString("project_name"),
+                    rs.getString("todo_title"),
+                    rs.getObject("starts_at", OffsetDateTime.class),
+                    rs.getObject("ends_at", OffsetDateTime.class),
+                    rs.getBoolean("is_completed")
+            ); 
+
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -263,6 +277,27 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
                 : "ASC";
     }
 
+@Override
+public List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetDateTime periodStart, OffsetDateTime periodEnd) {
+        String sql = """
+            SELECT s.subtask_id, s.title, p.name AS project_name, t.title AS todo_title, s.is_completed,
+                   s.starts_at, s.ends_at
+            FROM subtasks s
+            JOIN long_todos t ON s.todo_id = t.todo_id
+            JOIN projects p ON t.project_id = p.project_id
+            WHERE s.assignee_id = ? 
+            AND s.ends_at > ? AND s.starts_at < ?
+            ORDER BY s.starts_at
+            """;
+
+        return jdbcTemplate.query(
+                sql,
+                CALENDAR_SUBTASK_MAPPER,
+                userId,
+                periodStart,
+                periodEnd
+        );
+}
     @Override 
     public List<Subtask> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, LocalDateTime from, LocalDateTime to) {
         if(longToDoId == null){
