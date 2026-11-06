@@ -1,0 +1,20 @@
+type Query {
+    myProjects: [ProjectSummary!]!
+}
+
+type ProjectSummary {
+    projectId: ID!
+    name: String!
+    status: ProjectStatus!
+    role: ProjectRole!
+}
+
+enum ProjectStatus {
+    ACTIVE
+    COMPLETED
+}
+
+enum ProjectRole {
+    MEMBER
+    PROJECT_LEADER
+}
