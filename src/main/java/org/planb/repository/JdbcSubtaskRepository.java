@@ -22,6 +22,7 @@ import java.sql.Timestamp;
 @Repository 
 public class JdbcSubtaskRepository implements SubtaskRepository{
     public static final String COLUMNS = "title, description, subtask_id, todo_id, is_completed, assignee_id, priority ";
+    public static final String DASHBOARD_COLUMNS = "title, description, subtask_id, todo_id, is_completed, assignee_id, priority, starts_at, ends_at ";
 
     private static final RowMapper<Subtask> SUBTASK_MAPPER =
         (rs, rowNum) -> new Subtask(
@@ -322,7 +323,7 @@ public List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetD
             SELECT %s
             FROM subtasks
             WHERE todo_id = ?
-            """.formatted(COLUMNS));
+            """.formatted(DASHBOARD_COLUMNS));
         
         List<Object> parameters = new ArrayList<>();
         parameters.add(longToDoId);
@@ -344,6 +345,7 @@ public List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetD
         if(from != null){
             sql.append(" AND starts_at >= ? ");
             parameters.add(from);
+            
         }
         if(to != null){
             sql.append(" AND ends_at <= ? ");
