@@ -77,3 +77,49 @@ enum TaskPriority {
     MEDIUM
     LOW
 }
+
+type Mutation {
+    createMeeting(
+        projectId: ID!
+        input: CreateMeetingInput!
+    ): CreateMeetingPayload!
+
+    createLongToDo(
+        projectId: ID!
+        input: CreateLongToDoInput!
+    ): CreateLongToDoPayload!
+}
+
+input CreateMeetingInput {
+    title: String!
+    description: String
+    startDateTime: String!
+    endDateTime: String!
+    participantIds: [ID!]!
+}
+
+input CreateLongToDoInput {
+    title: String!
+    description: String
+    startDateTime: String!
+    endDateTime: String!
+    priority: TaskPriority!
+    assignedMemberIds: [ID!]!
+    subtasks: [CreateSubtaskInput!]
+}
+
+input CreateSubtaskInput {
+    title: String!
+    description: String
+    priority: TaskPriority! = MEDIUM
+}
+
+type CreateMeetingPayload {
+    meetingId: ID!
+    message: String!
+}
+
+type CreateLongToDoPayload {
+    longToDoId: ID!
+    message: String!
+}
