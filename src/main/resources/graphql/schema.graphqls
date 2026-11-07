@@ -1,5 +1,6 @@
 type Query {
     myProjects: [ProjectSummary!]!
+    project(projectId: ID!): ProjectDetails
 }
 
 type ProjectSummary {
@@ -7,6 +8,58 @@ type ProjectSummary {
     name: String!
     status: ProjectStatus!
     role: ProjectRole!
+}
+
+type ProjectDetails {
+    projectId: ID!
+    name: String!
+    description: String
+    status: ProjectStatus!
+    role: ProjectRole!
+    createdByUserFirstName: String
+    createdByUserLastName: String
+    members: [ProjectMember!]!
+    meetings: [ProjectMeeting!]!
+    longToDos: [ProjectLongToDo!]!
+}
+
+type ProjectMember {
+    userId: ID!
+    firstName: String
+    lastName: String
+    email: String
+    role: ProjectRole!
+}
+
+type ProjectMeeting {
+    meetingId: ID!
+    title: String!
+    description: String
+    startDateTime: String
+    endDateTime: String
+    done: Boolean!
+    participantIds: [ID!]!
+}
+
+type ProjectLongToDo {
+    longToDoId: ID!
+    title: String!
+    description: String
+    priority: TaskPriority
+    startDateTime: String
+    endDateTime: String
+    done: Boolean!
+    assignedMemberIds: [ID!]!
+    subtasks: [ProjectSubtask!]!
+}
+
+type ProjectSubtask {
+    subtaskId: ID!
+    title: String!
+    description: String
+    done: Boolean!
+    assigneeId: ID
+    priority: TaskPriority
 }
 
 enum ProjectStatus {
@@ -17,4 +70,10 @@ enum ProjectStatus {
 enum ProjectRole {
     MEMBER
     PROJECT_LEADER
+}
+
+enum TaskPriority {
+    HIGH
+    MEDIUM
+    LOW
 }
