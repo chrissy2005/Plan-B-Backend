@@ -52,7 +52,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource(){
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("https://plan-b-frontend-1a40950601f6.herokuapp.com"));
+        configuration.setAllowedOrigins(List.of(
+            "https://plan-b-frontend-1a40950601f6.herokuapp.com",
+            "https://plan-b-spa-1affe795a36d.herokuapp.com"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 

@@ -223,7 +223,9 @@ public AvailabilityResponse checkAvailability(Long projectId, AvailabilityReques
 
     for(Long userId : uniqueUserIds){
         User user = userRepository.findById(userId).orElseThrow(() -> new IllegalStateException("User not found"));
-        projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("User: " + userId + " is not a project member"));
+        projectMembershipRepository.findByProjectIdAndUserId(projectId, userId)
+            .orElseThrow(() -> new IllegalStateException(
+                "User: " + userId + " is not a project member"));
 
         List<CalendarMeetingEntry> meetings = meetingRepository.findAllByParticipantInPeriod(userId, start, end);
         List<CalendarSubtaskEntry> subtasks = subtaskRepository.findAllByAssigneeInPeriod(userId, start, end);
