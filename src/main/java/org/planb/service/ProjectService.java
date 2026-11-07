@@ -815,7 +815,7 @@ public class ProjectService {
             throw new IllegalArgumentException("Start date must be before end date");
         }
 
-        int updated = subtaskRepository.updateScheduleIfAssignedTo(longToDoId, subtaskId, subtaskId, request.from(), request.to());
+        int updated = subtaskRepository.updateScheduleIfAssignedTo(longToDoId, subtaskId, currentUser.getId(), request.from(), request.to());
         if(updated != 1){
             throw new IllegalStateException("subtask time could not be updated");
         }
