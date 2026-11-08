@@ -58,4 +58,10 @@ public class GlobalExceptionHandler {
     }
     return ResponseEntity.badRequest().body(new MessageResponse(message));
     }
+
+    @ExceptionHandler(GoogleCalendarException.class)
+    public ResponseEntity<MessageResponse> handleGoogleCalendarException(GoogleCalendarException exception) {
+        return ResponseEntity.status(exception.getStatus())
+                .body(new MessageResponse(exception.getMessage()));
+    }
 }
