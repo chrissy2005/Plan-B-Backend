@@ -653,12 +653,13 @@ public class ProjectService {
 
         for(LongToDo longToDo : longToDos){
             Long longToDoId = longToDo.getToDoId();
+            subtaskRepository.deleteAllByLongToDoId(longToDoId);
             for(ProjectMembership membership : memberships){
                 //delete all todo participants for the long todo
                 toDoParticipantsRepository.deleteByLongTodoIdAndUserId(longToDoId, membership.getUserId());
             }
             //delete all subtasks for the long todo
-            subtaskRepository.deleteAllByLongToDoId(longToDoId);
+            
         }
         for(Meeting meeting : meetings){
             Long meetingId = meeting.getMeetingId();
