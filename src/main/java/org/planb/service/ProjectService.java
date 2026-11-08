@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.HashSet;
 
-@Service 
+@Service
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
@@ -84,7 +84,7 @@ public class ProjectService {
         this.meetingRepository = meetingRepository;
     }
 
-    @Transactional 
+    @Transactional
     public ProjectResponse createProject(CreateProjectRequest request, String creatorEmail){
         User creator = userRepository.findByEmail(creatorEmail).orElseThrow(() -> new IllegalStateException("Authenticated user could not be found"));
         String name = request.getName().trim();
@@ -119,7 +119,7 @@ public class ProjectService {
 
         ProjectMembership requesterMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, requester.getId())
                                                 .orElseThrow(() -> new SecurityException("no permission"));
-        
+
         if(requesterMembership.getRole() != ProjectRole.PROJECT_LEADER){
             throw new SecurityException("no permission");
         }
@@ -168,7 +168,7 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<ProjectsViewResponse> getProjectView(String email){
-        
+
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
 
         List<ProjectMembership> memberships = projectMembershipRepository.findAllByUserId(currentUser.getId());
@@ -184,39 +184,39 @@ public class ProjectService {
         return projects.stream().map(project -> new ProjectsViewResponse(project.getId(), project.getName(), project.getProjectStatus(), roleByProjectId.get(project.getId()))).toList();
     }
 
-    
 
-    
 
-    
-   
 
-    @Transactional 
+
+
+
+
+    @Transactional
     public CreateLongToDoResponse createLongToDo(Long projectId, CreateLongToDoRequest request, String email){
-        
-        if(!request.getEndDateTime().isAfter(request.getStartDateTime())){ 
+
+        if(!request.getEndDateTime().isAfter(request.getStartDateTime())){
             throw new IllegalArgumentException("End date must be after start date");
         }
 
-        
+
         Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
 
-        
+
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
 
-        
+
         ProjectMembership currentMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("No project membership"));
-    
-        
+
+
         if(currentMembership.getRole() != ProjectRole.PROJECT_LEADER){
             throw new SecurityException("No permission to create a longToDo");
         }
 
-        
+
         List<Long> assignedMemberIds = request.getAssignedMemberIds() == null
                                                 ? List.of()
                                                 : request.getAssignedMemberIds();
-        
+
         Set<Long> uniqueMemberIds = new HashSet<>(assignedMemberIds);
         if(uniqueMemberIds.size() != assignedMemberIds.size()){
             throw new IllegalArgumentException("Duplicate participants Ids ");
@@ -229,7 +229,7 @@ public class ProjectService {
             }
         }
 
-        
+
         LongToDo longToDo = new LongToDo();
         longToDo.setProjectId(projectId);
         longToDo.setTitle(request.getTitle());
@@ -239,11 +239,11 @@ public class ProjectService {
         longToDo.setPriority(request.getPriority());
         longToDo.setDone(false);
 
-        
+
         LongToDo savedLongToDo = longToDoRepository.save(longToDo);
         Long longToDoId = savedLongToDo.getToDoId();
 
-        
+
         for(Long userId : uniqueMemberIds){
             ToDoParticipants participant= new ToDoParticipants();
             participant.setToDoId(longToDoId);
@@ -251,14 +251,14 @@ public class ProjectService {
             toDoParticipantsRepository.save(participant);
         }
 
-        
+
         List<CreateSubtaskRequest> subtaskRequests = request.getSubtasks() == null
                                         ? List.of()
                                         : request.getSubtasks();
-        
+
         for(CreateSubtaskRequest subtaskRequest : subtaskRequests){
-            
-            
+
+
 
             Subtask subtask = new Subtask();
             subtask.setTitle(subtaskRequest.getTitle());
@@ -288,7 +288,7 @@ public class ProjectService {
 
         return memberships.stream().map(membership -> {
             User user = userRepository.findById(membership.getUserId()).orElseThrow(() -> new IllegalStateException("User not found"));
-        
+
             ProjectMemberResponse response = new ProjectMemberResponse(user.getId(), user.getFirstname(), user.getLastname(), membership.getRole());
             response.setEmail(user.getEmail());
             return response;
@@ -299,7 +299,7 @@ public class ProjectService {
     public List<LongToDosResponse> getLongToDos(Long projectId, String email){
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
         ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("Project not found"));
-       
+
         List<LongToDo> longToDos = longToDoRepository.findAllByProjectId(projectId);
 
         if(membership.getRole() == ProjectRole.MEMBER){
@@ -320,7 +320,7 @@ public class ProjectService {
         return new SubtaskResponse(subtask.getTitle(), subtask.getDescription(), subtask.getSubtaskId(), subtask.isDone(), subtask.getAssigneeId(), subtask.getPriority());
     }
 
-    @Transactional 
+    @Transactional
     public LongToDosResponse setSubtaskDone(Long longToDoId, Long subtaskId, UpdateSubtaskDoneRequest request, String email){
         if(request == null || request.getUpdate() == null || !"done".equals(request.getUpdate().getAttribute()) || request.getUpdate().getNewValue() == null){
             throw new IllegalArgumentException("Expected update.attribut = 'done' and a boolean newValue");
@@ -330,7 +330,7 @@ public class ProjectService {
         ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
         Subtask subtask = subtaskRepository.findByIdAndLongToDoId(subtaskId, longToDoId).orElseThrow(() -> new IllegalStateException("Subtask does not belong to this long todo"));
 
-        
+
         boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
         boolean isAssigneeUser = subtask.getAssigneeId() != null && subtask.getAssigneeId().equals(currentUser.getId());
         if(!isProjectLeader && !isAssigneeUser){
@@ -347,7 +347,7 @@ public class ProjectService {
         return toLongToDosResponse(updatedLongToDo);
     }
 
-    @Transactional 
+    @Transactional
     public LongToDosResponse setLongToDoDone(Long longToDoId, Boolean done, String email){
         if(done == null ){
             throw new IllegalArgumentException("Field 'done' is required");
@@ -463,7 +463,7 @@ public class ProjectService {
         return new MessageResponse("subtask deleted");
     }
 
-    @Transactional 
+    @Transactional
     public MessageResponse deleteLongToDo(Long longToDoId, String email){
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
         LongToDo longToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Long todo not found"));
@@ -479,7 +479,7 @@ public class ProjectService {
         return new MessageResponse("long todo deleted");
     }
 
-    @Transactional 
+    @Transactional
     public MessageResponse deleteMember(Long projectId, Long targetUserId, String email){
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
         ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
@@ -520,8 +520,8 @@ public class ProjectService {
 
     private void removeUserFromProjectData(Long projectId, Long userId){
         List<LongToDo> longToDos = longToDoRepository.findAllByProjectId(projectId);
-        
-        
+
+
         for(LongToDo longToDo : longToDos){
             Long longToDoId = longToDo.getToDoId();
             List<Subtask> assignedSubtasks = subtaskRepository.findByLongToDoId(longToDo.getToDoId());
@@ -532,18 +532,18 @@ public class ProjectService {
                 }
             }
 
-            
+
             toDoParticipantsRepository.deleteByLongTodoIdAndUserId(longToDoId, userId);
         }
 
-         
+
         List<Meeting> meetings = meetingRepository.findAllByProjectId(projectId);
         for(Meeting meeting : meetings){
             meetingParticipantsRepository.deleteByMeetingIdAndUserId(meeting.getMeetingId(), userId);
         }
     }
 
-    @Transactional 
+    @Transactional
     public MessageResponse deleteProject(Long projectId, String email){
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
         projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
@@ -559,29 +559,29 @@ public class ProjectService {
             Long longToDoId = longToDo.getToDoId();
             subtaskRepository.deleteAllByLongToDoId(longToDoId);
             for(ProjectMembership membership : memberships){
-                
+
                 toDoParticipantsRepository.deleteByLongTodoIdAndUserId(longToDoId, membership.getUserId());
             }
-            
-            
+
+
         }
         for(Meeting meeting : meetings){
             Long meetingId = meeting.getMeetingId();
             for(ProjectMembership membership : memberships){
-                
+
                 meetingParticipantsRepository.deleteByMeetingIdAndUserId(meetingId, membership.getUserId());
             }
         }
 
-        
+
         meetingRepository.deleteByProjectId(projectId);
         longToDoRepository.deleteByProjectId(projectId);
         projectMembershipRepository.deleteByProjectId(projectId);
         projectRepository.deleteByProjectId(projectId);
         return new MessageResponse("Project deleted");
     }
-    
-    @Transactional 
+
+    @Transactional
     public MessageResponse updateProjectMemberRole(Long projectId, Long userId, UpdateProjectMemberRoleRequest request, String requesterEmail) {
         Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
         User requester = userRepository.findByEmail(requesterEmail).orElseThrow(() -> new IllegalStateException("Requester not found"));
@@ -611,7 +611,7 @@ public class ProjectService {
         return new MessageResponse("role updated");
     }
 
-    @Transactional 
+    @Transactional
     public MessageResponse updateLongToDo(Long longToDoId, UpdateLongToDoRequest request, String email){
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
         LongToDo longToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Long todo not found"));
@@ -689,7 +689,7 @@ public class ProjectService {
         return new MessageResponse("long todo updated");
     }
 
-    @Transactional 
+    @Transactional
     public MessageResponse updateProject(Long projectId, UpdateProjectRequest request, String email){
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
         Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
@@ -705,7 +705,7 @@ public class ProjectService {
         return new MessageResponse("Project updated");
     }
 
-    @Transactional 
+    @Transactional
     public MessageResponse updateSubtaskTime(Long longToDoId, Long subtaskId, UpdateSubtaskTimeRequest request, String email){
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
         LongToDo longToDo = longToDoRepository.findById(longToDoId).orElseThrow(() -> new IllegalStateException("Long todo not found"));

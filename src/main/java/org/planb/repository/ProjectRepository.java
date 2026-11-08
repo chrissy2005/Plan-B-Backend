@@ -7,9 +7,9 @@ import java.util.Optional;
 
 public interface ProjectRepository {
 
-  Project save(Project project);    
-  
-  Optional<Project> findByProjectId(Long projectId);   
+  Project save(Project project);
+
+  Optional<Project> findByProjectId(Long projectId);
 
   List<Project> findByCreatedUserId(Long createdUserId);
 
@@ -18,4 +18,4 @@ public interface ProjectRepository {
   boolean existsByProjectId(Long projectId);
 
   void deleteByProjectId(Long projectId);
-} 
+}

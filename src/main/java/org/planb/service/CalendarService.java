@@ -25,7 +25,7 @@ import java.util.ArrayList; //KI Log 74
 import java.time.ZoneId; //KI Log 75
 import java.time.format.DateTimeFormatter; //KI Log 75
 
-@Service 
+@Service
 public class CalendarService {
 
     private final MeetingRepository meetingRepository;
@@ -41,9 +41,9 @@ public class CalendarService {
         this.longToDoRepository = longToDoRepository;
         this.subtaskRepository = subtaskRepository;
         this.userRepository = userRepository;
-        
+
     }
-    
+
     public CalendarResponse getCalendarWeek (String email, LocalDate week) {
     //KI Log 78
     User user = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("Authenticated user could not be found"));
@@ -58,34 +58,34 @@ public class CalendarService {
     LocalDate nextMonday = from.plusDays(7);
 
     //KI Log 72
-    
-    LocalDateTime longToDoPeriodStart = from.atStartOfDay(); 
-    LocalDateTime longToDoPeriodEnd = nextMonday.atStartOfDay(); 
-    
+
+    LocalDateTime longToDoPeriodStart = from.atStartOfDay();
+    LocalDateTime longToDoPeriodEnd = nextMonday.atStartOfDay();
+
     OffsetDateTime meetingSubtaskPeriodStart = from.atStartOfDay(BERLIN).toOffsetDateTime();
     OffsetDateTime meetingSubtaskPeriodEnd = nextMonday.atStartOfDay(BERLIN).toOffsetDateTime();
-    
-    
+
+
     List<CalendarMeetingEntry> meetings = meetingRepository.findAllByParticipantInPeriod(userId, meetingSubtaskPeriodStart, meetingSubtaskPeriodEnd);
     List<CalendarMeetingResponse> meetingResponses = new ArrayList<>(); //KI Log 74
-    
+
     //KI Log 74
-    for (CalendarMeetingEntry entry : meetings) { 
+    for (CalendarMeetingEntry entry : meetings) {
         Long meetingId = entry.getMeetingId();
         String title = entry.getTitle();
         String projectName = entry.getProjectName();
         String formattedFrom = entry.getFrom().atZoneSameInstant(BERLIN).format(MEETING_SUBTASK_DATE_TIME_FORMATTER);
         String formattedTo = entry.getTo().atZoneSameInstant(BERLIN).format(MEETING_SUBTASK_DATE_TIME_FORMATTER);
         boolean done = entry.isDone();
-        
+
         CalendarMeetingResponse meetingResponse = new CalendarMeetingResponse(title, projectName, meetingId, formattedFrom, formattedTo, done);
         meetingResponses.add(meetingResponse);
    }
-   
-   
+
+
    List<CalendarLongToDoEntry> longToDos = longToDoRepository.findAllByParticipantInPeriod(userId, longToDoPeriodStart, longToDoPeriodEnd);
    List<CalendarLongToDoResponse> longToDoResponses = new ArrayList<>(); //KI Log 74
-   
+
    //KI Log 74
    for (CalendarLongToDoEntry entry : longToDos) {
     Long longToDoId = entry.getLongToDoId();
@@ -99,7 +99,7 @@ public class CalendarService {
     longToDoResponses.add(longToDoResponse);
    }
 
-   
+
    List<CalendarSubtaskEntry> subtasks = subtaskRepository.findAllByAssigneeInPeriod(userId, meetingSubtaskPeriodStart, meetingSubtaskPeriodEnd);
    List<CalendarSubtaskResponse> subtaskResponses = new ArrayList<>();
    for (CalendarSubtaskEntry entry : subtasks) {
@@ -114,7 +114,7 @@ public class CalendarService {
     CalendarSubtaskResponse subtaskResponse = new CalendarSubtaskResponse(title, projectName, subtaskId, todoTitle, formattedFrom, formattedTo, done);
     subtaskResponses.add(subtaskResponse);
    }
-   
+
    String message = "calendar successfully retrieved for user";
    CalendarResponse calendarResponse = new CalendarResponse(message, from.toString(), to.toString(), meetingResponses, subtaskResponses, longToDoResponses);
    return calendarResponse;

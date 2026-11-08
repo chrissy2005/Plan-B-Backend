@@ -26,12 +26,12 @@ private static final String COLUMNS =
                     rs.getLong("project_id"),
                     rs.getString("title"),
                     rs.getString("description"),
-                    
-                    
+
+
                     rs.getTimestamp("starts_at").toLocalDateTime(),
                     rs.getTimestamp("ends_at").toLocalDateTime(),
                     rs.getBoolean("is_completed")
-                    
+
             );
 
     //KI Log 67
@@ -43,7 +43,7 @@ private static final String COLUMNS =
                     rs.getObject("starts_at", OffsetDateTime.class),
                     rs.getObject("ends_at", OffsetDateTime.class),
                     rs.getBoolean("is_completed")
-            ); 
+            );
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -74,19 +74,19 @@ Meeting savedMeeting = jdbcTemplate.query(
                 meeting.isDone()
         ).getFirst(); //KI Log 64
 
-        
+
         return savedMeeting;
 }
 
 private Meeting updateExistingMeeting(Meeting meeting) {
-        
+
         String sql = """
                 UPDATE meetings
                 SET title = ?, description = ?, starts_at = ?, ends_at = ?, is_completed = ?
                 WHERE meeting_id = ?
                 RETURNING
                 """ + COLUMNS;
-        
+
 
         Meeting updatedMeeting = jdbcTemplate.query(
                 sql,
@@ -95,15 +95,15 @@ private Meeting updateExistingMeeting(Meeting meeting) {
                 meeting.getDescription(),
                 meeting.getStartDateTime(),
                 meeting.getEndDateTime(),
-                meeting.isDone(), 
+                meeting.isDone(),
                 meeting.getMeetingId()
         ).stream() //KI Log 66
             .findFirst()  //KI Log 66
             .orElseThrow(() -> new IllegalStateException("meeting not found")); //KI Log 66
-            
+
         return updatedMeeting;
 }
-   
+
 @Override
 public Optional<Meeting> findById(Long meetingId){
     if (meetingId == null) {
@@ -112,18 +112,18 @@ public Optional<Meeting> findById(Long meetingId){
 
         String sql = "SELECT " + COLUMNS
                 + " FROM meetings WHERE meeting_id = ?";
-       
+
     Optional<Meeting> meeting = jdbcTemplate.query(sql, MEETINGS_MAPPER, meetingId)
                 .stream()
                 .findFirst();
-    
+
     return meeting;
     }
 
 @Override
 public List<Meeting> findAllByProjectId(Long projectId){
 //KI Log 65
-String sql = 
+String sql =
 "SELECT " + COLUMNS + " FROM meetings WHERE project_id = ? ORDER BY starts_at";
     List<Meeting> meetings = jdbcTemplate.query(sql, MEETINGS_MAPPER, projectId);
 
@@ -132,7 +132,7 @@ String sql =
 }
 
 
-@Override 
+@Override
 public boolean existsById(Long meetingId){
     if (meetingId == null) {
             return false;
@@ -147,7 +147,7 @@ public boolean existsById(Long meetingId){
         return Boolean.TRUE.equals(exists);
     }
 
-@Override 
+@Override
 public void deleteById(Long meetingId){
      if (meetingId == null) {
             return;
@@ -162,9 +162,9 @@ public void deleteByProjectId(Long projectId){
         jdbcTemplate.update("DELETE FROM meetings WHERE project_id = ?", projectId);
     }
 
-@Override 
+@Override
 public List<CalendarMeetingEntry> findAllByParticipantInPeriod(Long userId, OffsetDateTime periodStart, OffsetDateTime periodEnd){ //KI Log 68
-    //Ki Log 68 
+    //Ki Log 68
     String sql = """
             SELECT m.meeting_id, m.title, p.name AS project_name, m.starts_at, m.ends_at, m.is_completed
             FROM meetings m
@@ -187,13 +187,13 @@ public List<CalendarMeetingEntry> findAllByParticipantInPeriod(Long userId, Offs
 public List<Meeting> searchForDashboard(Long meetingId, Boolean done, LocalDateTime from, LocalDateTime to) {
     if(meetingId == null){
         return Collections.emptyList();
-    }    
+    }
     StringBuilder sql = new StringBuilder("""
             SELECT %s
             FROM meetings
             WHERE meeting_id = ?
             """.formatted(COLUMNS));
-        
+
         List<Object> parameters = new ArrayList<>();
         parameters.add(meetingId);
 

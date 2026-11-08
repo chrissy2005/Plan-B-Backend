@@ -4,17 +4,17 @@ import java.util.List;
 
 
 public class CalendarResponse {
-    
+
     private String message;
     private String from;
     private String to;
     private List<CalendarMeetingResponse> meetings;
     private List<CalendarSubtaskResponse> subtasks;
     private List<CalendarLongToDoResponse> longToDos;
-    
+
 
     public CalendarResponse(String message, String from, String to, List<CalendarMeetingResponse> meetings, List<CalendarSubtaskResponse> subtasks, List<CalendarLongToDoResponse> longToDos) {
-        
+
         this.message = message;
         this.from = from;
         this.to = to;
@@ -23,7 +23,7 @@ public class CalendarResponse {
         this.longToDos = longToDos;
     }
 
-    
+
 
     public String getMessage() {
         return message;

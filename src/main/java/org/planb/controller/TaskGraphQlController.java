@@ -127,7 +127,7 @@ public class TaskGraphQlController {
                         .map(this::toSubtaskRequest)
                         .toList());
 
-        
+
         validate(request);
         requireTimeOrder(
                 request.getStartDateTime(),
@@ -147,7 +147,7 @@ public class TaskGraphQlController {
         request.setDescription(trim(input.description()));
         request.setPriority(input.priority());
 
-        
+
         request.setAssigneeId(null);
         return request;
     }

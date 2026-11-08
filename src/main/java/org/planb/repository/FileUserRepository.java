@@ -22,11 +22,11 @@ public class FileUserRepository implements UserRepository {
 
     @Override
     public synchronized User save(User user) {
-        
+
         Properties properties = loadProperties();
 
         Long id = user.getId();
-        
+
         if(id == null) {
             id = nextId(properties);
         }
@@ -51,7 +51,7 @@ public class FileUserRepository implements UserRepository {
     private Properties loadProperties() {
         Properties properties = new Properties();
         if (!Files.exists(filePath)) {
-            return properties; 
+            return properties;
         }
         try (InputStream inputStream = Files.newInputStream(filePath)) {
             properties.load(inputStream);
@@ -59,7 +59,7 @@ public class FileUserRepository implements UserRepository {
         } catch (IOException e) {
             throw new IllegalStateException("User could not be loaded", e);
         }
-        
+
     }
 
     @Override
@@ -67,7 +67,7 @@ public class FileUserRepository implements UserRepository {
 
         String normalizedEmail = normalizeEmail(email);
         Properties properties =  loadProperties();
-        
+
         for (String key : properties.stringPropertyNames()) {
             if (!key.startsWith("user.") || !key.endsWith(".email")) {
                 continue;
@@ -77,7 +77,7 @@ public class FileUserRepository implements UserRepository {
                 continue;
             }
             String idText = key.substring("user.".length(), key.length() - ".email".length());
-            
+
             try {
                 long id = Long.parseLong(idText);
                 return Optional.of(readUser(properties, id));
@@ -85,13 +85,13 @@ public class FileUserRepository implements UserRepository {
                 throw new IllegalStateException("Invalid user ID format in properties file: " + idText, e);
             }
         }
-        
+
         return Optional.empty();
     }
 
     @Override
     public synchronized Optional<User> findById(Long id) {
-        
+
         if(id == null) {
             return Optional.empty();
         }
@@ -105,7 +105,7 @@ public class FileUserRepository implements UserRepository {
 
         return Optional.of(readUser(properties, id));
     }
-    
+
     private User readUser(Properties properties, long id) {
         String prefix = "user." + id + ".";
         String firstname = properties.getProperty(prefix + "firstname");
@@ -116,7 +116,7 @@ public class FileUserRepository implements UserRepository {
         return new User(id, firstname, lastname, email, passwordHash);
     }
 
-    private long nextId(Properties properties) { 
+    private long nextId(Properties properties) {
         long id = 1;
 
         while (properties.containsKey("user." + id + ".email")) {
@@ -127,7 +127,7 @@ public class FileUserRepository implements UserRepository {
 
 
     private void storeProperties(Properties properties) {
-       
+
         try (OutputStream outputStream = Files.newOutputStream(filePath)) {
             properties.store(outputStream, "Plan B Users");
         } catch (IOException e) {

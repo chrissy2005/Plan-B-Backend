@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @Repository
 public class JdbcProjectRepository implements ProjectRepository {
-    
+
 private static final String COLUMNS =
 "project_id, name, description, status, created_user_id";
 
@@ -25,7 +25,7 @@ private static final String COLUMNS =
                     rs.getString("description"),
                     rs.getObject("created_user_id", Long.class), // KI Log Nr. 28
                     ProjectStatus.valueOf(rs.getString("status"))
-                    
+
             );
 
     private final JdbcTemplate jdbcTemplate;
@@ -83,7 +83,7 @@ private Project updateExistingProject(Project project) {
 
         return updatedProjects.getFirst();
     }
-   
+
 
 @Override
     public Optional<Project> findByProjectId(Long projectId) {
@@ -109,7 +109,7 @@ private Project updateExistingProject(Project project) {
         //KI Log Nr. 26
         String sql = "SELECT " + COLUMNS
                 + " FROM projects WHERE created_user_id = ? ORDER BY project_id";
- 
+
         return jdbcTemplate.query(sql, PROJECT_MAPPER, createdUserId);
     }
 
@@ -120,23 +120,23 @@ private Project updateExistingProject(Project project) {
         }
 
         //KI Log Nr. 33
-        
+
         List<Long> ids = projectIds.stream()
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-        
+
         //KI Log Nr. 33
-        
+
         if (ids.isEmpty()) {
             return Collections.emptyList();
         }
         //KI Log Nr. 33
-        
+
         String placeholders = String.join(", ", Collections.nCopies(ids.size(), "?"));
         String sql = "SELECT " + COLUMNS
                 + " FROM projects WHERE project_id IN (" + placeholders + ") ORDER BY project_id";
- 
+
         return jdbcTemplate.query(sql, PROJECT_MAPPER, ids.toArray());
     }
 

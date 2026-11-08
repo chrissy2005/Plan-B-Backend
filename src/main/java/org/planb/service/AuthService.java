@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.Locale;
 import java.util.Optional;
 
-@Service 
+@Service
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -35,7 +35,7 @@ public class AuthService {
                 return Optional.empty();
             }
             String token = jwtService.generateToken(user);
-            
+
             LoginResponse response = new LoginResponse(token, "Login successful", user.getId());
             return Optional.of(response);
     }

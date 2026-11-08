@@ -8,7 +8,7 @@ import org.planb.model.LongToDo;
 import org.planb.model.TaskPriority;
 import org.planb.model.LongToDoSortField;
 import org.planb.model.SortDirection;
-import org.planb.model.CalendarLongToDoEntry; //KI Log 69 
+import org.planb.model.CalendarLongToDoEntry; //KI Log 69
 
 public interface LongToDoRepository {
 

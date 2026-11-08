@@ -25,20 +25,20 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    
+
     public boolean createUser(CreateUserRequest request) {
 
         String firstname = request.getFirstName().trim();
         String lastname = request.getLastName().trim();
         String email = request.getEmail().trim().toLowerCase(Locale.ROOT);
         if (userRepository.existsByEmail(email)) {
-            return false; 
+            return false;
         }
 
         String passwordHash = passwordEncoder.encode(request.getPassword());
 
         User user = new User(null, firstname, lastname, email, passwordHash);
-        
+
         try {
             userRepository.save(user);
             return true;

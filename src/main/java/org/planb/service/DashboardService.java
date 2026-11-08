@@ -29,9 +29,9 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Collections;
 
-@Service 
+@Service
 public class DashboardService {
-   
+
     private final UserRepository userRepository;
     private final LongToDoRepository longToDoRepository;
     private final SubtaskRepository subtaskRepository;
@@ -63,7 +63,7 @@ public class DashboardService {
         if(value == null){
             return null;
         }
-        
+
         return value.atZoneSameInstant(PROJECT_ZONE).toLocalDateTime();
     }
 
@@ -78,7 +78,7 @@ public class DashboardService {
             .map(ToDoParticipants::getToDoId).filter(id -> id != null).distinct()
             .flatMap(longToDoId -> longToDoRepository.searchForDashboard(longToDoId, priority, done, from, to).stream())
             .map(this::toDashboardLongToDoResponse)
-            .toList();     
+            .toList();
     }
 
 
@@ -118,7 +118,7 @@ public class DashboardService {
             .map(MeetingParticipants::getMeetingId).filter(id -> id != null).distinct()
             .flatMap(meetingId -> meetingRepository.searchForDashboard(meetingId,  done,  from, to).stream())
             .map(this::toDashboardMeetingResponse)
-            .toList(); 
+            .toList();
     }
 
     private DashboardLongToDoResponse toDashboardLongToDoResponse(LongToDo longToDo) {
@@ -146,8 +146,8 @@ public class DashboardService {
             projectName,
             subtask.getTitle(),
             subtask.getDescription(),
-            toLocalDateTime(subtask.getStart()), 
-            toLocalDateTime(subtask.getEnd()),  
+            toLocalDateTime(subtask.getStart()),
+            toLocalDateTime(subtask.getEnd()),
             subtask.getPriority(),
             subtask.isDone()
         );

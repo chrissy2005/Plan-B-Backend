@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 
 
 
-@RestController 
+@RestController
 @RequestMapping("/projects")
 public class ProjectController {
     private final ProjectService projectService;
@@ -49,7 +49,7 @@ public class ProjectController {
         this.meetingService = meetingService;
     }
 
-    @PostMapping 
+    @PostMapping
     public ResponseEntity<ProjectResponse> createProject(@RequestBody @Valid CreateProjectRequest request, Authentication authentication) {
 
         String creatorEmail = authentication.getName();
@@ -70,7 +70,7 @@ public class ProjectController {
 
     @PostMapping("/{projectId}/members")
     public ResponseEntity<MessageResponse> addMember(@PathVariable Long projectId, @RequestBody @Valid AddProjectMemberRequest request, Authentication authentication) {
-        
+
         String creatorEmail = authentication.getName();
         try {
             projectService.addMember(projectId, request, creatorEmail);
@@ -81,28 +81,28 @@ public class ProjectController {
             return memberError(exception);
         }
     }
-    
+
     @GetMapping("/{projectId}")
     public ResponseEntity<ProjectDetailsResponse> getProjectDetails(@PathVariable Long projectId, Authentication authentication) {
-        
+
         String email = authentication.getName();
 
         ProjectDetailsResponse response = projectService.getProjectDetails(projectId, email);
-        
+
         return ResponseEntity.ok(response);
     }
-    
+
     @GetMapping
     public ResponseEntity<List<ProjectsViewResponse>> getProjectView(Authentication authentication) {
-        
+
         String email = authentication.getName();
 
         List<ProjectsViewResponse> response = projectService.getProjectView(email);
-        
+
         return ResponseEntity.ok(response);
     }
 
-    
+
 
     @GetMapping("/{projectId}/members")
     public ResponseEntity<?> getProjectmembers( @PathVariable Long projectId, Authentication authentication){
@@ -126,7 +126,7 @@ public class ProjectController {
         throw exception;
     }
 
-    
+
 
     @GetMapping("/{projectId}/meetings")
     public ResponseEntity<List<MeetingsResponse>> getMeetings(@PathVariable Long projectId, Authentication authentication) {
@@ -140,7 +140,7 @@ public class ProjectController {
         String creatorEmail = authentication.getName();
         CreateMeetingResponse response = meetingService.createMeeting(projectId, request, creatorEmail);
         return ResponseEntity.ok(response);
-        
+
     }
 
     @GetMapping("/{projectId}/long-todos")
@@ -155,7 +155,7 @@ public class ProjectController {
         String creatorEmail = authentication.getName();
         CreateLongToDoResponse response = projectService.createLongToDo(projectId, request, creatorEmail);
         return ResponseEntity.ok(response);
-        
+
     }
 
     @DeleteMapping ("/{projectId}/members/{userId}")
@@ -183,16 +183,16 @@ public class ProjectController {
     public ResponseEntity<MessageResponse> updateProject(@PathVariable Long projectId, @RequestBody @Valid UpdateProjectRequest request, Authentication authentication) {
         String email = authentication.getName();
         MessageResponse response = projectService.updateProject(projectId, request, email);
-        return ResponseEntity.ok(response);  
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{projectId}/availability")
     public ResponseEntity<AvailabilityResponse> postMethodName(@PathVariable Long projectId, @RequestBody @Valid AvailabilityRequest request, Authentication authentication) {
         String email = authentication.getName();
         AvailabilityResponse response = meetingService.checkAvailability(projectId, request, email);
-        
+
         return ResponseEntity.ok(response);
     }
-    
+
 
 }

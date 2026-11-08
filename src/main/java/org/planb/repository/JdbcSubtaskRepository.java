@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
 
-@Repository 
+@Repository
 public class JdbcSubtaskRepository implements SubtaskRepository{
     public static final String COLUMNS = "title, description, subtask_id, todo_id, is_completed, assignee_id, priority ";
     public static final String DASHBOARD_COLUMNS = "title, description, subtask_id, todo_id, is_completed, assignee_id, priority, starts_at, ends_at ";
@@ -45,7 +45,7 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
                     rs.getObject("ends_at", OffsetDateTime.class),
                     rs.getBoolean("is_completed")
             );
-    
+
     private static final RowMapper<DashboardSubtaskEntry> DASHBOARD_SUBTASK_MAPPER = (rs, rowNum) ->
             new DashboardSubtaskEntry(
                     rs.getString("title"),
@@ -65,7 +65,7 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    @Override 
+    @Override
     public Subtask save(Subtask subtask){
         if(subtask.getSubtaskId() != null){
             return updateExistingSubtask(subtask);
@@ -77,7 +77,7 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
             VALUES (?, ?, ?, ?, ?, ?)
             RETURNING
             """ + COLUMNS;
-        
+
         List<Subtask> saved = jdbcTemplate.query(
             sql,
             SUBTASK_MAPPER,
@@ -104,11 +104,11 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
             todo_id = ?,
             is_completed = ?,
             assignee_id = ?,
-            priority = ? 
+            priority = ?
             WHERE subtask_id = ?
             RETURNING
             """ + COLUMNS;
-        
+
         List<Subtask> updated = jdbcTemplate.query(
             sql,
             SUBTASK_MAPPER,
@@ -128,7 +128,7 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
         return updated.getFirst();
     }
 
-    @Override 
+    @Override
     public Optional<Subtask> findById(Long subtaskId){
         if(subtaskId == null){
             return Optional.empty();
@@ -141,7 +141,7 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
         return jdbcTemplate.query(sql, SUBTASK_MAPPER, subtaskId).stream().findFirst();
     }
 
-    @Override 
+    @Override
     public Optional<Subtask> findByIdAndLongToDoId(Long subtaskId, Long longToDoId){
         if(subtaskId == null || longToDoId == null){
             return Optional.empty();
@@ -149,13 +149,13 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
         String sql = """
             SELECT %s
             FROM subtasks
-            WHERE subtask_id = ? 
+            WHERE subtask_id = ?
              AND todo_id = ?
             """.formatted(COLUMNS);
         return jdbcTemplate.query(sql, SUBTASK_MAPPER, subtaskId, longToDoId).stream().findFirst();
     }
 
-    @Override 
+    @Override
     public List<Subtask> findByLongToDoId(Long longToDoId){
         if(longToDoId == null){
             return Collections.emptyList();
@@ -168,8 +168,8 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
             """.formatted(COLUMNS);
         return jdbcTemplate.query(sql, SUBTASK_MAPPER, longToDoId);
     }
-    
-    @Override 
+
+    @Override
     public List<Subtask> searchByLongTodo(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, SubtaskSortField sortField, SortDirection sortDirection){
         if(longToDoId == null){
             return Collections.emptyList();
@@ -180,7 +180,7 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
             FROM subtasks
             WHERE todo_id = ?
             """.formatted(COLUMNS));
-        
+
             List<Object> parameters = new ArrayList<>();
             parameters.add(longToDoId);
 
@@ -194,7 +194,7 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
             }
             if(assigneeId != null){
                 sql.append(" AND assignee_id = ? ");
-                parameters.add(assigneeId);   
+                parameters.add(assigneeId);
             }
 
 
@@ -203,11 +203,11 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
             sql.append(" ");
             sql.append(direction(sortDirection));
             sql.append(", todo_id");
-            
+
             return jdbcTemplate.query(sql.toString(), SUBTASK_MAPPER, parameters.toArray());
     }
 
-    @Override 
+    @Override
     public Boolean existsById(Long subtaskId){
         if(subtaskId == null){
             return false;
@@ -244,7 +244,7 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
             """, subtaskId, userId);
     }
 
-    @Override 
+    @Override
     public void deleteById(Long subtaskId){
         if(subtaskId == null){
             return;
@@ -257,7 +257,7 @@ public class JdbcSubtaskRepository implements SubtaskRepository{
         jdbcTemplate.update(sql, subtaskId);
     }
 
-    @Override 
+    @Override
     public void deleteAllByLongToDoId(Long longToDoId){
         if(longToDoId == null){
             return;
@@ -301,7 +301,7 @@ public List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetD
             FROM subtasks s
             JOIN long_todos t ON s.todo_id = t.todo_id
             JOIN projects p ON t.project_id = p.project_id
-            WHERE s.assignee_id = ? 
+            WHERE s.assignee_id = ?
             AND s.ends_at > ? AND s.starts_at < ?
             ORDER BY s.starts_at
             """;
@@ -314,7 +314,7 @@ public List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetD
                 periodEnd
         );
 }
-    @Override 
+    @Override
     public List<DashboardSubtaskEntry> searchForDashboard(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, OffsetDateTime from, OffsetDateTime to) {
         if(longToDoId == null){
             return Collections.emptyList();
@@ -324,7 +324,7 @@ public List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetD
             FROM subtasks
             WHERE todo_id = ?
             """.formatted(DASHBOARD_COLUMNS));
-        
+
         List<Object> parameters = new ArrayList<>();
         parameters.add(longToDoId);
 
@@ -338,26 +338,26 @@ public List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetD
         }
         if(assigneeId != null){
             sql.append(" AND assignee_id = ? ");
-            parameters.add(assigneeId);   
+            parameters.add(assigneeId);
         }
 
-        
+
         if(from != null){
             sql.append(" AND starts_at >= ? ");
             parameters.add(from);
-            
+
         }
         if(to != null){
             sql.append(" AND ends_at <= ? ");
             parameters.add(to);
         }
         sql.append(" ORDER BY starts_at ASC");
-        
-        
+
+
         return jdbcTemplate.query(sql.toString(), DASHBOARD_SUBTASK_MAPPER, parameters.toArray());
     }
 
-@Override 
+@Override
 public int updateScheduleIfAssignedTo(Long longToDoId, Long subtaskId, Long userId, OffsetDateTime startDateTime, OffsetDateTime endDateTime){
     return jdbcTemplate.update("""
         UPDATE subtasks
