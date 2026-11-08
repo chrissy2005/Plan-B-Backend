@@ -58,7 +58,7 @@ public class GoogleCalendarService {
             var items = body.putArray("items");
             batch.forEach(id -> items.addObject().put("id", id));
             JsonNode busy = send("POST", "/freeBusy", body.toString(), googleAccessToken);
-            busy.path("calendars").fields().forEachRemaining(entry ->
+            busy.path("calendars").properties().forEach(entry ->
                     entry.getValue().path("busy").forEach(period -> {
                         String from = period.path("start").asText("");
                         String to = period.path("end").asText("");
