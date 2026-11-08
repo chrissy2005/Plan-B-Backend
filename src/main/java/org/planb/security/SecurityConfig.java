@@ -33,15 +33,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors(Customizer.withDefaults())
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity, but consider enabling it in production
+            .csrf(csrf -> csrf.disable()) 
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight request from browser
-                .requestMatchers(HttpMethod.POST, "/users").permitAll() // Allow user creation without authentication
-                .requestMatchers(HttpMethod.POST, "/auth").permitAll() // Allow authentication without authentication
-                .anyRequest().authenticated() // Require authentication for all other requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
+                .requestMatchers(HttpMethod.POST, "/users").permitAll() 
+                .requestMatchers(HttpMethod.POST, "/auth").permitAll() 
+                .anyRequest().authenticated() 
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

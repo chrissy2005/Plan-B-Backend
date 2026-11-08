@@ -42,10 +42,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-//import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
-//import java.util.function.Function;
+
 import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.HashSet;
@@ -184,123 +184,35 @@ public class ProjectService {
         return projects.stream().map(project -> new ProjectsViewResponse(project.getId(), project.getName(), project.getProjectStatus(), roleByProjectId.get(project.getId()))).toList();
     }
 
-    /* this was the old AI-Method from  22.10 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> getProjectMembers(Long projectId, String email) {
-        User currentUser = requireProjectMember(projectId, email);
-        return projectMembershipRepository.findAllByProjectId(projectId).stream()
-                .map(membership -> {
-                    User user = userRepository.findById(membership.getUserId())
-                            .orElseThrow(() -> new IllegalStateException("Project member not found"));
-                    Map<String, Object> member = new HashMap<>();
-                    member.put("userId", user.getId());
-                    member.put("firstName", user.getFirstname());
-                    member.put("lastName", user.getLastname());
-                    member.put("name", (user.getFirstname() + " " + user.getLastname()).trim());
-                    member.put("email", user.getEmail());
-                    member.put("role", membership.getRole());
-                    return member;
-                })
-                .toList();
-    }
-    */
+    
 
-    /* this was the old AI-Method from 22.10 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> getProjectMeetings(Long projectId, String email) {
-        requireProjectMember(projectId, email);
-        List<Map<String, Object>> meetings = jdbcTemplate.queryForList("""
-                SELECT meeting_id, project_id, title, description, starts_at, ends_at, is_completed
-                FROM meetings
-                WHERE project_id = ?
-                ORDER BY starts_at, meeting_id
-                """, projectId);
-        meetings.forEach(meeting -> {
-            Long meetingId = ((Number) meeting.get("meeting_id")).longValue();
-            meeting.put("meetingId", meetingId);
-            meeting.put("projectId", projectId);
-            meeting.put("startDateTime", meeting.remove("starts_at"));
-            meeting.put("endDateTime", meeting.remove("ends_at"));
-            meeting.put("done", meeting.remove("is_completed"));
-            meeting.put("priority", "MEDIUM");
-            meeting.put("participantIds", jdbcTemplate.queryForList(
-                    "SELECT user_id FROM meeting_participants WHERE meeting_id = ? ORDER BY user_id",
-                    Long.class, meetingId));
-        });
-        return meetings;
-    }
-    */
+    
 
-    /* this was the old AI-Method from 22.10
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> getProjectLongToDos(Long projectId, String email) {
-        requireProjectMember(projectId, email);
-        List<Map<String, Object>> todos = jdbcTemplate.queryForList("""
-                SELECT todo_id, project_id, title, description, starts_at, ends_at, is_completed, priority
-                FROM long_todos
-                WHERE project_id = ?
-                ORDER BY starts_at, todo_id
-                """, projectId);
-        todos.forEach(todo -> {
-            Long todoId = ((Number) todo.get("todo_id")).longValue();
-            todo.put("longToDoId", todoId);
-            todo.put("projectId", projectId);
-            todo.put("startDateTime", todo.remove("starts_at"));
-            todo.put("endDateTime", todo.remove("ends_at"));
-            todo.put("done", todo.remove("is_completed"));
-            todo.put("assignedMemberIds", jdbcTemplate.queryForList(
-                    "SELECT user_id FROM todo_participants WHERE todo_id = ? ORDER BY user_id",
-                    Long.class, todoId));
-            List<Map<String, Object>> subtasks = jdbcTemplate.queryForList("""
-                    SELECT subtask_id, title, description, is_completed, assignee_id, priority
-                    FROM subtasks
-                    WHERE todo_id = ?
-                    ORDER BY subtask_id
-                    """, todoId);
-            subtasks.forEach(subtask -> {
-                subtask.put("subtaskId", subtask.remove("subtask_id"));
-                subtask.put("done", subtask.remove("is_completed"));
-                subtask.put("assigneeId", subtask.remove("assignee_id"));
-            });
-            todo.put("subtasks", subtasks);
-        });
-        return todos;
-    }
-    */
-   /* old ai-method (Hilfsmethode) 
-    private User requireProjectMember(Long projectId, String email) {
-        projectRepository.findByProjectId(projectId)
-                .orElseThrow(() -> new IllegalStateException("Project not found"));
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
-        projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId())
-                .orElseThrow(() -> new SecurityException("no permission"));
-        return currentUser;
-    }
-    */
+    
+   
 
     @Transactional 
     public CreateLongToDoResponse createLongToDo(Long projectId, CreateLongToDoRequest request, String email){
-        //check input times
+        
         if(!request.getEndDateTime().isAfter(request.getStartDateTime())){ 
             throw new IllegalArgumentException("End date must be after start date");
         }
 
-        //check if projectId exists
+        
         Project project = projectRepository.findByProjectId(projectId).orElseThrow(() -> new IllegalStateException("Project not found"));
 
-        //load current user from JWT-token
+        
         User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("User not found"));
 
-        //load project membership for the current user and requested project
+        
         ProjectMembership currentMembership = projectMembershipRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new IllegalStateException("No project membership"));
     
-        //check if current user is PROJECT_LEADER
+        
         if(currentMembership.getRole() != ProjectRole.PROJECT_LEADER){
             throw new SecurityException("No permission to create a longToDo");
         }
 
-        //check AssignedMemberIds
+        
         List<Long> assignedMemberIds = request.getAssignedMemberIds() == null
                                                 ? List.of()
                                                 : request.getAssignedMemberIds();
@@ -317,7 +229,7 @@ public class ProjectService {
             }
         }
 
-        //create Long-Todo
+        
         LongToDo longToDo = new LongToDo();
         longToDo.setProjectId(projectId);
         longToDo.setTitle(request.getTitle());
@@ -327,11 +239,11 @@ public class ProjectService {
         longToDo.setPriority(request.getPriority());
         longToDo.setDone(false);
 
-        //save Long-Todo and get todo_id
+        
         LongToDo savedLongToDo = longToDoRepository.save(longToDo);
         Long longToDoId = savedLongToDo.getToDoId();
 
-        //save participants of the Long-Todo
+        
         for(Long userId : uniqueMemberIds){
             ToDoParticipants participant= new ToDoParticipants();
             participant.setToDoId(longToDoId);
@@ -339,22 +251,14 @@ public class ProjectService {
             toDoParticipantsRepository.save(participant);
         }
 
-        //save subtasks from long-todo
+        
         List<CreateSubtaskRequest> subtaskRequests = request.getSubtasks() == null
                                         ? List.of()
                                         : request.getSubtasks();
         
         for(CreateSubtaskRequest subtaskRequest : subtaskRequests){
             
-            /* Optional Code: When the projectleader could assign AssigneeId of each subtask 
-
-            if(subtaskRequest.getAssigneeId() != null){
-                boolean assigneeIdIsMember = projectMembershipRepository.existsByProjectIdAndUserId(projectId, subtaskRequest.getAssigneeId());
-                if(!assigneeIdIsMember){
-                    throw new IllegalArgumentException("AssigneeId is not a project member ");
-                }
-            }
-            */
+            
 
             Subtask subtask = new Subtask();
             subtask.setTitle(subtaskRequest.getTitle());
@@ -426,7 +330,7 @@ public class ProjectService {
         ProjectMembership membership = projectMembershipRepository.findByProjectIdAndUserId(longToDo.getProjectId(), currentUser.getId()).orElseThrow(() -> new IllegalStateException("User is not a project member"));
         Subtask subtask = subtaskRepository.findByIdAndLongToDoId(subtaskId, longToDoId).orElseThrow(() -> new IllegalStateException("Subtask does not belong to this long todo"));
 
-        //check if requester is PROJECT_LEADER or MEMBER
+        
         boolean isProjectLeader = membership.getRole() == ProjectRole.PROJECT_LEADER;
         boolean isAssigneeUser = subtask.getAssigneeId() != null && subtask.getAssigneeId().equals(currentUser.getId());
         if(!isProjectLeader && !isAssigneeUser){
@@ -617,7 +521,7 @@ public class ProjectService {
     private void removeUserFromProjectData(Long projectId, Long userId){
         List<LongToDo> longToDos = longToDoRepository.findAllByProjectId(projectId);
         
-        // load all subtasks assigned to the user in the project and remove the assigneeId
+        
         for(LongToDo longToDo : longToDos){
             Long longToDoId = longToDo.getToDoId();
             List<Subtask> assignedSubtasks = subtaskRepository.findByLongToDoId(longToDo.getToDoId());
@@ -628,11 +532,11 @@ public class ProjectService {
                 }
             }
 
-            //delete all todo participants for the user in the project
+            
             toDoParticipantsRepository.deleteByLongTodoIdAndUserId(longToDoId, userId);
         }
 
-         //Load all meetings in the project and remove the user from meeting participants
+         
         List<Meeting> meetings = meetingRepository.findAllByProjectId(projectId);
         for(Meeting meeting : meetings){
             meetingParticipantsRepository.deleteByMeetingIdAndUserId(meeting.getMeetingId(), userId);
@@ -655,21 +559,21 @@ public class ProjectService {
             Long longToDoId = longToDo.getToDoId();
             subtaskRepository.deleteAllByLongToDoId(longToDoId);
             for(ProjectMembership membership : memberships){
-                //delete all todo participants for the long todo
+                
                 toDoParticipantsRepository.deleteByLongTodoIdAndUserId(longToDoId, membership.getUserId());
             }
-            //delete all subtasks for the long todo
+            
             
         }
         for(Meeting meeting : meetings){
             Long meetingId = meeting.getMeetingId();
             for(ProjectMembership membership : memberships){
-                //delete all meeting participants for the meeting
+                
                 meetingParticipantsRepository.deleteByMeetingIdAndUserId(meetingId, membership.getUserId());
             }
         }
 
-        //delete all project data
+        
         meetingRepository.deleteByProjectId(projectId);
         longToDoRepository.deleteByProjectId(projectId);
         projectMembershipRepository.deleteByProjectId(projectId);

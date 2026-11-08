@@ -7,20 +7,20 @@ import java.util.Optional;
 
 public interface ProjectMembershipRepository {
     
-    ProjectMembership save(ProjectMembership membership);   //sava and update ProjectMembership
+    ProjectMembership save(ProjectMembership membership);   
     boolean addIfAbsent(ProjectMembership membership);
 
-    Optional<ProjectMembership> findByProjectIdAndUserId(Long projectId, Long userId);  //find Role of one projectmember
+    Optional<ProjectMembership> findByProjectIdAndUserId(Long projectId, Long userId);  
 
-    List<ProjectMembership> findAllByProjectId(Long projectId);    //find all Projectmembers of one Project
+    List<ProjectMembership> findAllByProjectId(Long projectId);    
 
-    List<ProjectMembership> findAllByUserId(Long userId);          //find all Projects of one user
+    List<ProjectMembership> findAllByUserId(Long userId);          
 
-    List<ProjectMembership> findByProjectIdAndRole(Long projectId, ProjectRole role);   //find all Project where user has this role
+    List<ProjectMembership> findByProjectIdAndRole(Long projectId, ProjectRole role);   
 
-    boolean existsByProjectIdAndUserId(Long projectId, Long userId);    //check if user is already a projectmember
+    boolean existsByProjectIdAndUserId(Long projectId, Long userId);    
 
-    void deleteByProjectIdAndUSerId(Long projectId, Long userId);   //delete member from project
+    void deleteByProjectIdAndUSerId(Long projectId, Long userId);   
 
-    void deleteByProjectId(Long projectId);    //delete all relations from one project 
+    void deleteByProjectId(Long projectId);    
 }

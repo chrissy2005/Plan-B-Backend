@@ -33,11 +33,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
-//import java.util.Map;
+
 import org.springframework.web.bind.annotation.PutMapping;
 
 
-//import io.jsonwebtoken.security.Message;
+
 
 @RestController 
 @RequestMapping("/projects")
@@ -102,13 +102,7 @@ public class ProjectController {
         return ResponseEntity.ok(response);
     }
 
-    /* old AI-Method from 22.10
-    @GetMapping("/{projectId}/members")
-    public ResponseEntity<List<Map<String, Object>>> getMembers(
-            @PathVariable Long projectId, Authentication authentication) {
-        return ResponseEntity.ok(projectService.getProjectMembers(projectId, authentication.getName()));
-    }
-    */
+    
 
     @GetMapping("/{projectId}/members")
     public ResponseEntity<?> getProjectmembers( @PathVariable Long projectId, Authentication authentication){
@@ -132,13 +126,7 @@ public class ProjectController {
         throw exception;
     }
 
-    /* old AI-Method from 22.10
-    @GetMapping("/{projectId}/meetings")
-    public ResponseEntity<List<Map<String, Object>>> getMeetings(
-            @PathVariable Long projectId, Authentication authentication) {
-        return ResponseEntity.ok(projectService.getProjectMeetings(projectId, authentication.getName()));
-    }
-    */
+    
 
     @GetMapping("/{projectId}/meetings")
     public ResponseEntity<List<MeetingsResponse>> getMeetings(@PathVariable Long projectId, Authentication authentication) {

@@ -39,7 +39,7 @@ jobs:
           --health-retries 12
 
     env:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/planb_test
+      SPRING_DATASOURCE_URL: jdbc:postgresql:
       SPRING_DATASOURCE_USERNAME: planb_test
       SPRING_DATASOURCE_PASSWORD: planb_ci_only
       SPRING_SQL_INIT_MODE: never

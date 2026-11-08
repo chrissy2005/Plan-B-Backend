@@ -146,8 +146,8 @@ public class DashboardService {
             projectName,
             subtask.getTitle(),
             subtask.getDescription(),
-            toLocalDateTime(subtask.getStart()), //eigentlich muss hier subtask.getStartTime() stehen
-            toLocalDateTime(subtask.getEnd()),  // eigentlich muss hier subtask.getEndTime() stehen
+            toLocalDateTime(subtask.getStart()), 
+            toLocalDateTime(subtask.getEnd()),  
             subtask.getPriority(),
             subtask.isDone()
         );

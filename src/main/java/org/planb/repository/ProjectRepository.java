@@ -1,13 +1,13 @@
 package org.planb.repository;
 
 import org.planb.model.Project;
-//import org.planb.model.ProjectStatus;
+
 import java.util.List;
 import java.util.Optional;
 
 public interface ProjectRepository {
 
-  Project save(Project project);    //for updating and saving the Project(-data)
+  Project save(Project project);    
   
   Optional<Project> findByProjectId(Long projectId);   
 

@@ -15,32 +15,32 @@ import java.time.OffsetDateTime;
 public interface SubtaskRepository {
 
 Subtask save(Subtask subtask);
-//create subtask or update
+
 
 Optional<Subtask> findById(Long subtaskId);
-//find one subtask by its Id
+
 
 Optional<Subtask> findByIdAndLongToDoId(Long subtaskId, Long longToDoId);
-//common case: find one subtask of one longToDo
+
 
 List<Subtask> findByLongToDoId(Long longToDoId);
-//common case: all longToDos of one project
+
 
 List<Subtask> searchByLongTodo(Long longToDoId, TaskPriority priority, Boolean done, Long assigneeId, SubtaskSortField sortField, SortDirection sortDirection);
-//this is the filter and sort method to search and order specific requests
+
 
 Boolean existsById(Long subtaskId);
-//check if the subtask exists
+
 
 int claimIfUnassigned(Long subtaskId, Long userId);
 
 int releaseIfAssignedTo(Long subtaskId, Long userId);
 
 void deleteById(Long subtaskId);
-//delete subtask by its ID
+
 
 void deleteAllByLongToDoId(Long longToDoId);
-//delete all subtasks that belong to one longToDo
+
 
 List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetDateTime periodStart, OffsetDateTime periodEnd);
 

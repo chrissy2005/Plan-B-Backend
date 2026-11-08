@@ -341,7 +341,7 @@ public List<CalendarSubtaskEntry> findAllByAssigneeInPeriod(Long userId, OffsetD
             parameters.add(assigneeId);   
         }
 
-        // When Time attributes are added to the Subtask model, uncomment this code to filter by time range
+        
         if(from != null){
             sql.append(" AND starts_at >= ? ");
             parameters.add(from);

@@ -58,14 +58,14 @@ public class CalendarService {
     LocalDate nextMonday = from.plusDays(7);
 
     //KI Log 72
-    //für lange ToDos
+    
     LocalDateTime longToDoPeriodStart = from.atStartOfDay(); 
     LocalDateTime longToDoPeriodEnd = nextMonday.atStartOfDay(); 
-    //für Meetings& Subtasks
+    
     OffsetDateTime meetingSubtaskPeriodStart = from.atStartOfDay(BERLIN).toOffsetDateTime();
     OffsetDateTime meetingSubtaskPeriodEnd = nextMonday.atStartOfDay(BERLIN).toOffsetDateTime();
     
-    //Meetings in liste speichern 
+    
     List<CalendarMeetingEntry> meetings = meetingRepository.findAllByParticipantInPeriod(userId, meetingSubtaskPeriodStart, meetingSubtaskPeriodEnd);
     List<CalendarMeetingResponse> meetingResponses = new ArrayList<>(); //KI Log 74
     
@@ -82,7 +82,7 @@ public class CalendarService {
         meetingResponses.add(meetingResponse);
    }
    
-   //To Dos in liste speichern 
+   
    List<CalendarLongToDoEntry> longToDos = longToDoRepository.findAllByParticipantInPeriod(userId, longToDoPeriodStart, longToDoPeriodEnd);
    List<CalendarLongToDoResponse> longToDoResponses = new ArrayList<>(); //KI Log 74
    
@@ -99,7 +99,7 @@ public class CalendarService {
     longToDoResponses.add(longToDoResponse);
    }
 
-   //Subtasks in Liste speichern
+   
    List<CalendarSubtaskEntry> subtasks = subtaskRepository.findAllByAssigneeInPeriod(userId, meetingSubtaskPeriodStart, meetingSubtaskPeriodEnd);
    List<CalendarSubtaskResponse> subtaskResponses = new ArrayList<>();
    for (CalendarSubtaskEntry entry : subtasks) {

@@ -120,19 +120,19 @@ private Project updateExistingProject(Project project) {
         }
 
         //KI Log Nr. 33
-        // null-Einträge und Duplikate entfernen
+        
         List<Long> ids = projectIds.stream()
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
         
         //KI Log Nr. 33
-        // Leere Liste abfangen: "IN ()" wäre ungültiges SQL
+        
         if (ids.isEmpty()) {
             return Collections.emptyList();
         }
         //KI Log Nr. 33
-        // Ein Platzhalter pro ID -> "IN (?, ?, ?)"; Werte nie direkt ins SQL schreiben (SQL-Injection)
+        
         String placeholders = String.join(", ", Collections.nCopies(ids.size(), "?"));
         String sql = "SELECT " + COLUMNS
                 + " FROM projects WHERE project_id IN (" + placeholders + ") ORDER BY project_id";
